@@ -1,35 +1,67 @@
-# streamlit_app.py
-
 import streamlit as st
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+
+st.set_page_config(page_title="Roll Profile Comparison", layout="centered")
 
 st.title("Roll Profile Plotter")
 
-st.markdown("Enter 17 diameter values measured across the roll (in mm):")
+# Step 1: Mid Diameter Input
+mid_dia = st.number_input("Enter Mid Diameter (in mm)", min_value=850.0, max_value=950.0, value=894.7, step=0.01)
 
-# Input for 17 diameters
-diameters = []
-cols = st.columns(5)
-for i in range(17):
-    with cols[i % 5]:
-        val = st.number_input(f"Point {i+1}", value=100.0, step=0.01, format="%.2f")
-        diameters.append(val)
+# Step 2: Taper Parameters
+barrel_length = 1700  # mm
+taper_height = 1.5    # mm
+half_taper = taper_height / 2
 
-# Generate ideal profile (linear taper from 102 to 98 mm)
-ideal = np.linspace(102, 98, 17)
+# Step 3: Generate Positions
+positions = np.arange(0, barrel_length + 1, 100)  # [0, 100, ..., 1700]
 
-if st.button("Plot Profile"):
-    x = np.linspace(0, 100, 17)
+# Step 4: Calculate Ideal Profile
+ideal_profile = []
+for pos in positions:
+    if pos <= 500:
+        dia = mid_dia - half_taper + (pos / 500) * half_taper
+    elif pos >= 1200:
+        dia = mid_dia - half_taper + ((1700 - pos) / 500) * half_taper
+    else:
+        dia = mid_dia
+    ideal_profile.append(round(dia, 2))
 
-    fig, ax = plt.subplots()
-    ax.plot(x, ideal, label="Ideal Profile", color="green", linestyle="--", marker='o')
-    ax.plot(x, diameters, label="Measured Profile", color="blue", linestyle="-", marker='x')
+# Step 5: Measured Diameters Input
+st.subheader("Enter Measured Diameter at Each Position (in mm)")
+measured_dia = []
+cols = st.columns(4)
+for i, pos in enumerate(positions):
+    with cols[i % 4]:
+        val = st.number_input(f"{pos} mm", key=f"meas_{i}", value=round(ideal_profile[i], 2), step=0.01)
+        measured_dia.append(val)
 
-    ax.set_xlabel("Position across roll (%)")
-    ax.set_ylabel("Diameter (mm)")
-    ax.set_title("Comparison of Measured vs Ideal Roll Profile")
-    ax.legend()
-    ax.grid(True)
+# Step 6: Plotting
+fig, ax = plt.subplots(figsize=(10, 5))
+ax.plot(positions, ideal_profile, label="Ideal Profile", linestyle='--', marker='o')
+ax.plot(positions, measured_dia, label="Measured Diameter", linestyle='-', marker='s', color='red')
+ax.set_xlabel("Position (mm)")
+ax.set_ylabel("Diameter (mm)")
+ax.set_title("Roll Profile Comparison")
+ax.legend()
+ax.grid(True)
 
-    st.pyplot(fig)
+st.pyplot(fig)
+
+# Optional: Table Display
+st.subheader("Comparison Table")
+import pandas as pd
+df = pd.DataFrame({
+    "Position (mm)": positions,
+    "Ideal Dia (mm)": ideal_profile,
+    "Measured Dia (mm)": measured_dia,
+    "Error (mm)": np.round(np.array(measured_dia) - np.array(ideal_profile), 2)
+})
+st.dataframe(df)
+
+# Optional: CSV download
+csv = df.to_csv(index=False).encode('utf-8')
+st.download_button("Download as CSV", csv, "roll_profile_comparison.csv", "text/csv")
+
+
