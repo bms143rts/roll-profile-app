@@ -4,4 +4,5 @@ openpyxl
 python-docx
 numpy
 matplotlib
+google-auth
 gspread
