@@ -3,11 +3,11 @@ import pandas as pd
 from io import BytesIO
 from docx import Document
 import gspread
-from oauth2client.service_account import ServiceAccountCredentials
+from google.oauth2.service_account import ServiceAccountCredentials
 
 # --- Google Sheets Setup ---
-SCOPE = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", SCOPE)
+SCOPE = ["https://www.googleapis.com/auth/spreadsheets","https://www.googleapis.com/auth/drive"]
+creds = Credentials.from_service_account_file("credentials.json", scopes=SCOPE)
 client = gspread.authorize(creds)
 SHEET = client.open("BackupRollData").sheet1  # Make sure your sheet exists
 
@@ -113,3 +113,4 @@ st.download_button(
     file_name="BackupRollData.docx",
     mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 )
+
