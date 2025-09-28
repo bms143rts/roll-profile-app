@@ -93,7 +93,7 @@ def to_excel_bytes(df):
 def to_word_bytes(df):
     doc = Document()
     doc.add_heading("Roll Profile Data", level=1)
-    table = doc.add_table(rows=0, cols=len(df.columns))
+    table = doc.add_table(rows=1, cols=len(df.columns))
     table.style = "Table Grid"
     hdr = table.rows[0].cells
     for i, col in enumerate(df.columns):
@@ -115,6 +115,7 @@ if not df.empty:
     st.download_button("⬇️ Download Word", data=to_word_bytes(df),
                        file_name="roll_data.docx",
                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+
 
 
 
