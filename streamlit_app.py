@@ -6,12 +6,15 @@ from datetime import datetime
 
 # --- GOOGLE SHEETS SETUP ---
 SCOPE = ["https://www.googleapis.com/auth/spreadsheets"]
-creds = Credentials.from_service_account_file("credentials.json", scopes=SCOPE)
+
+creds_dict = st.secrets["gcp_service_account"]
+creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPE)
 client = gspread.authorize(creds)
 
 # Replace with your actual Sheet ID
 SHEET_ID = "YOUR_SHEET_ID"
 worksheet = client.open_by_key(SHEET_ID).sheet1
+
 
 # --- STREAMLIT APP ---
 st.title("Roll Profile Data Entry")
@@ -50,4 +53,5 @@ if st.checkbox("Show All Submitted Data"):
 
     excel = df.to_excel(index=False, engine="openpyxl")
     st.download_button("⬇️ Download Excel", excel, "roll_data.xlsx")
+
 
