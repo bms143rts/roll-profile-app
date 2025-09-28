@@ -29,6 +29,9 @@ st.title("Backup Roll Profile Data Entry")
 
 # Load existing data
 existing_data = sheet.get_all_records()
+headers = data[0]
+rows = data[1:]
+
 df = pd.DataFrame(existing_data)
 
 # --- Entry Form ---
@@ -113,4 +116,5 @@ if not df.empty:
     st.download_button("⬇️ Download Word", data=to_word_bytes(df),
                        file_name="roll_data.docx",
                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+
 
