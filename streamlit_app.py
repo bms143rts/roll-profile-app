@@ -110,8 +110,16 @@ def to_word_bytes(df):
 
 # --- Download Buttons ---
 if not df.empty:
-    st.download_button(
-        "⬇️ Download Excel",
-        data=to_excel_bytes(df),
-        file_name="roll_data.xlsx",
-        mime="application/vnd.openxm
+   st.download_button(
+    "⬇️ Download Excel",
+    data=to_excel_bytes(df),
+    file_name="roll_data.xlsx",
+    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+)
+st.download_button(
+    "⬇️ Download Word",
+    data=to_word_bytes(df),
+    file_name="roll_data.docx",
+    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+)
+
