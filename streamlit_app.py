@@ -47,26 +47,29 @@ with st.form("entry_form", clear_on_submit=False):
     submitted = st.form_submit_button("Save Entry")
 
 # --- Save Entry ---
+# --- Save Entry ---
 if submitted:
     errors = []
 
     if roll_no == "":
         errors.append("❌ Roll No cannot be empty")
 
+    # Filter diameters: remove zeros or values out of range
+    filtered_diameters = {}
     for d, v in diameters.items():
+        if v == 0:
+            continue  # Skip zeros
         if not (MIN_DIA <= v <= MAX_DIA):
             errors.append(f"❌ {d} mm value {v} out of range [{MIN_DIA}-{MAX_DIA}]")
+        else:
+            filtered_diameters[d] = v
 
     if errors:
         for e in errors:
             st.error(e)
     else:
-        # Prepare row
-        row = [
-            len(existing_data) + 1,  # Entry No
-            str(entry_date),
-            roll_no
-        ] + [diameters[d] for d in DISTANCES]
+        # Prepare row without serial number
+        row = [str(entry_date), roll_no] + [filtered_diameters.get(d, "") for d in DISTANCES]
 
         # Append to Google Sheet
         sheet.append_row(row)
@@ -75,6 +78,7 @@ if submitted:
         # Refresh dataframe
         existing_data = sheet.get_all_records()
         df = pd.DataFrame(existing_data)
+
 
 # --- Show Data ---
 st.subheader("Stored Data ")
@@ -115,6 +119,7 @@ if not df.empty:
     st.download_button("⬇️ Download Word", data=to_word_bytes(df),
                        file_name="roll_data.docx",
                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+
 
 
 
