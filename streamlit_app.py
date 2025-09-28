@@ -81,8 +81,8 @@ st.subheader("Stored Data")
 if df.empty:
     st.info("No entries yet.")
 else:
-    # Use st.table to hide index
-    st.table(df)
+    # Convert to list of dicts to hide index completely
+    st.table(df.to_dict("records"))
 
 # --- Download Functions ---
 def to_excel_bytes(df):
@@ -114,11 +114,4 @@ if not df.empty:
         "⬇️ Download Excel",
         data=to_excel_bytes(df),
         file_name="roll_data.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    )
-    st.download_button(
-        "⬇️ Download Word",
-        data=to_word_bytes(df),
-        file_name="roll_data.docx",
-        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-    )
+        mime="application/vnd.openxm
