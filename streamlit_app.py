@@ -25,7 +25,7 @@ MIN_DIA = 1200.0
 MAX_DIA = 1400.0
 
 # --- Streamlit UI ---
-st.title("Roll Profile Data Entry (Shared Google Sheet)")
+st.title("Backup Roll Profile Data Entry")
 
 # Load existing data
 existing_data = sheet.get_all_records()
@@ -36,7 +36,7 @@ with st.form("entry_form", clear_on_submit=False):
     st.subheader("Add New Roll Entry")
     entry_date = st.date_input("Date", value=dt_date.today())
     roll_no = st.text_input("Roll No (required, stored in UPPERCASE)").strip().upper()
-    st.markdown("**Diameters (mm)** — must be between 1200 and 1400")
+    st.markdown("**Diameters (mm)** — must be between 1250 and 1352")
 
     diameters = {}
     for d in DISTANCES:
@@ -75,7 +75,7 @@ if submitted:
         df = pd.DataFrame(existing_data)
 
 # --- Show Data ---
-st.subheader("Stored Data (Live from Google Sheet)")
+st.subheader("Stored Data ")
 if df.empty:
     st.info("No entries yet.")
 else:
@@ -113,3 +113,4 @@ if not df.empty:
     st.download_button("⬇️ Download Word", data=to_word_bytes(df),
                        file_name="roll_data.docx",
                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+
