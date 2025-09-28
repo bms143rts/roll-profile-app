@@ -15,10 +15,31 @@ SCOPE = [
 
 # Load credentials from Streamlit secrets
 creds_dict = st.secrets["gcp_service_account"]
-creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPE)
+creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"],
+                                              scopes=["https://www.googleapis.com/auth/spreadsheets"])
 client = gspread.authorize(creds)
-sheet = client.open(SHEET_NAME).sheet1
 
+# Open sheet
+sheet = client.open("YourSheetName").worksheet("Sheet1")
+
+# Get all values (not records, to avoid structure issues)
+data = sheet.get_all_values()
+
+# First row = header, rest = data
+headers = data[0]
+rows = data[1:]
+
+# Create DataFrame
+df = pd.DataFrame(rows, columns=headers)
+
+# Convert numeric columns to numbers
+for col in df.columns[2:]:  # skip Date, Roll No
+    df[col] = pd.to_numeric(df[col], errors="coerce")
+
+# Replace zeros with NaN (cleaning diameters)
+df = df.replace(0, pd.NA)
+
+st.write("Cleaned Data", df)
 # --- Roll Config ---
 DISTANCES = [100, 350, 600, 850, 1100, 1350, 1600]
 MIN_DIA = 1200.0
@@ -75,7 +96,7 @@ if submitted:
         df = pd.DataFrame(existing_data)
 
 # --- Show Data ---
-st.subheader("Stored Data (Live from Google Sheet)")
+st.subheader("Stored Data ")
 if df.empty:
     st.info("No entries yet.")
 else:
@@ -90,7 +111,7 @@ def to_excel_bytes(df):
 
 def to_word_bytes(df):
     doc = Document()
-    doc.add_heading("Roll Profile Data", level=2)
+    doc.add_heading("Roll Profile Data", level=1)
     table = doc.add_table(rows=1, cols=len(df.columns))
     table.style = "Table Grid"
     hdr = table.rows[0].cells
@@ -113,4 +134,5 @@ if not df.empty:
     st.download_button("⬇️ Download Word", data=to_word_bytes(df),
                        file_name="roll_data.docx",
                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+
 
