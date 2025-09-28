@@ -1,74 +1,38 @@
 import streamlit as st
+import traceback
 import gspread
 from google.oauth2.service_account import Credentials
-import pandas as pd
 
-# -------------------------
-# Google Sheets Setup
-# -------------------------
-scopes = [
-    "https://www.googleapis.com/auth/spreadsheets",
-    "https://www.googleapis.com/auth/drive"
-]
+st.title("DEBUG: Google Sheets auth check")
 
-# Load secrets (service account JSON stored in st.secrets)
-creds_dict = st.secrets["gcp_service_account"]
-creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
-client = gspread.authorize(creds)
-
-# Open your Google Sheet (must be shared with service account email)
-SHEET_NAME = "RollProfileData"   # change to your sheet name
-sheet = client.open(SHEET_NAME).sheet1
-
-
-# -------------------------
-# App UI
-# -------------------------
-st.title("📊 Roll Profile Data Collector")
-
-st.markdown("Enter your roll profile measurements below:")
-
-# Example input: 17 diameter values
-values = []
-for i in range(1, 18):
-    val = st.number_input(f"Diameter {i}", step=0.01, format="%.2f")
-    values.append(val)
-
-username = st.text_input("Your Name / ID")
-
-if st.button("Submit"):
-    if username.strip() == "":
-        st.warning("⚠️ Please enter your name or ID before submitting.")
-    else:
-        try:
-            # Save to Google Sheet
-            row = [username] + values
-            sheet.append_row(row)
-            st.success("✅ Data submitted successfully!")
-        except Exception as e:
-            st.error(f"❌ Error saving data: {e}")
-
-
-# -------------------------
-# View & Download History
-# -------------------------
-st.subheader("📜 Submission History")
+# 1) show keys present
+st.write("Secrets keys:", list(st.secrets.keys()))
 
 try:
-    data = sheet.get_all_records()
-    if data:
-        df = pd.DataFrame(data)
-        st.dataframe(df)
+    # 2) load dict and normalize private_key newlines
+    creds_dict = dict(st.secrets["gcp_service_account"])
+    pk = creds_dict.get("private_key", "")
+    if isinstance(pk, str) and "\\n" in pk:
+        creds_dict["private_key"] = pk.replace("\\n", "\n")
+        st.write("Replaced '\\\\n' with real newlines in private_key.")
 
-        # Download button
-        csv = df.to_csv(index=False).encode("utf-8")
-        st.download_button(
-            label="⬇️ Download CSV",
-            data=csv,
-            file_name="roll_profile_data.csv",
-            mime="text/csv"
-        )
-    else:
-        st.info("No submissions yet.")
+    # 3) initialize creds + client
+    scopes = [
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://www.googleapis.com/auth/drive"
+    ]
+    creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
+    client = gspread.authorize(creds)
+    st.success("Auth OK — gspread client created.")
+
+    # 4) test open by key (replace with your SHEET_ID)
+    SHEET_ID = "PUT_YOUR_SHEET_ID_HERE"
+    st.write("Attempting to open sheet id:", SHEET_ID)
+    sh = client.open_by_key(SHEET_ID)
+    st.success("Opened spreadsheet: " + sh.title)
+    st.write("Sheet owner / url:", sh.url)
+
 except Exception as e:
-    st.error(f"❌ Could not load history: {e}")
+    st.error("Auth / Sheet open failed: " + str(e))
+    st.text("Full traceback (for debugging):")
+    st.text(traceback.format_exc())
