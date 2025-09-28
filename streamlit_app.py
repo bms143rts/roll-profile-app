@@ -6,6 +6,8 @@ from datetime import datetime
 
 # --- GOOGLE SHEETS SETUP ---
 SCOPE = ["https://www.googleapis.com/auth/spreadsheets"]
+st.write("Secrets loaded keys:", list(st.secrets.keys()))
+
 
 creds_dict = st.secrets["gcp_service_account"]
 creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPE)
@@ -53,6 +55,7 @@ if st.checkbox("Show All Submitted Data"):
 
     excel = df.to_excel(index=False, engine="openpyxl")
     st.download_button("⬇️ Download Excel", excel, "roll_data.xlsx")
+
 
 
 
