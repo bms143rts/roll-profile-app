@@ -29,8 +29,6 @@ st.title("Backup Roll Profile Data Entry")
 
 # Load existing data
 existing_data = sheet.get_all_records()
-
-
 df = pd.DataFrame(existing_data)
 
 # --- Entry Form ---
@@ -38,7 +36,7 @@ with st.form("entry_form", clear_on_submit=False):
     st.subheader("Add New Roll Entry")
     entry_date = st.date_input("Date", value=dt_date.today())
     roll_no = st.text_input("Roll No (required, stored in UPPERCASE)").strip().upper()
-    st.markdown("**Diameters (mm)** — must be between 1250 and 1352")
+    st.markdown("**Diameters (mm)** — must be between 1200 and 1400 (zeros will be ignored)")
 
     diameters = {}
     for d in DISTANCES:
@@ -47,14 +45,13 @@ with st.form("entry_form", clear_on_submit=False):
     submitted = st.form_submit_button("Save Entry")
 
 # --- Save Entry ---
-# --- Save Entry ---
 if submitted:
     errors = []
 
     if roll_no == "":
         errors.append("❌ Roll No cannot be empty")
 
-    # Filter diameters: remove zeros or values out of range
+    # Filter diameters: remove zeros
     filtered_diameters = {}
     for d, v in diameters.items():
         if v == 0:
@@ -79,15 +76,13 @@ if submitted:
         existing_data = sheet.get_all_records()
         df = pd.DataFrame(existing_data)
 
-
 # --- Show Data ---
-st.subheader("Stored Data ")
+st.subheader("Stored Data")
 if df.empty:
     st.info("No entries yet.")
 else:
-    st.dataframe(df.reset_index(drop=True), use_container_width=True)
-
-
+    # Use st.table to hide index
+    st.table(df)
 
 # --- Download Functions ---
 def to_excel_bytes(df):
@@ -115,18 +110,15 @@ def to_word_bytes(df):
 
 # --- Download Buttons ---
 if not df.empty:
-    st.download_button("⬇️ Download Excel", data=to_excel_bytes(df),
-                       file_name="roll_data.xlsx",
-                       mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-    st.download_button("⬇️ Download Word", data=to_word_bytes(df),
-                       file_name="roll_data.docx",
-                       mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
-
-
-
-
-
-
-
-
-
+    st.download_button(
+        "⬇️ Download Excel",
+        data=to_excel_bytes(df),
+        file_name="roll_data.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+    st.download_button(
+        "⬇️ Download Word",
+        data=to_word_bytes(df),
+        file_name="roll_data.docx",
+        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    )
