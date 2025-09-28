@@ -85,7 +85,8 @@ st.subheader("Stored Data ")
 if df.empty:
     st.info("No entries yet.")
 else:
-    st.dataframe(df)
+    st.dataframe(df.style.hide_index(), use_container_width=True)
+
 
 # --- Download Functions ---
 def to_excel_bytes(df):
@@ -119,6 +120,7 @@ if not df.empty:
     st.download_button("⬇️ Download Word", data=to_word_bytes(df),
                        file_name="roll_data.docx",
                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+
 
 
 
