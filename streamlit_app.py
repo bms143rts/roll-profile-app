@@ -20,7 +20,7 @@ creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"],
 client = gspread.authorize(creds)
 
 # Open sheet
-sheet = client.open("YourSheetName").worksheet("Sheet1")
+sheet = client.open("SHEET_NAME").worksheet("Sheet1")
 
 # Get all values (not records, to avoid structure issues)
 data = sheet.get_all_values()
@@ -134,5 +134,6 @@ if not df.empty:
     st.download_button("⬇️ Download Word", data=to_word_bytes(df),
                        file_name="roll_data.docx",
                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+
 
 
