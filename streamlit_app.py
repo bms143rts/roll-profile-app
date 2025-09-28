@@ -1,60 +1,74 @@
 import streamlit as st
 import gspread
-import pandas as pd
 from google.oauth2.service_account import Credentials
+import pandas as pd
 
-# --------------------------
-# 1. Load service account from secrets
-# --------------------------
-creds_dict = st.secrets["gcp_service_account"]
-
+# -------------------------
+# Google Sheets Setup
+# -------------------------
 scopes = [
-    "https://spreadsheets.google.com/feeds",
+    "https://www.googleapis.com/auth/spreadsheets",
     "https://www.googleapis.com/auth/drive"
 ]
 
+# Load secrets (service account JSON stored in st.secrets)
+creds_dict = st.secrets["gcp_service_account"]
 creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
-
-# --------------------------
-# 2. Connect to Google Sheets
-# --------------------------
 client = gspread.authorize(creds)
 
-# Replace with your sheet name
-SHEET_NAME = "Roll_Data"
-sheet = client.open(SHEET_NAME).sheet1  
+# Open your Google Sheet (must be shared with service account email)
+SHEET_NAME = "RollProfileData"   # change to your sheet name
+sheet = client.open(SHEET_NAME).sheet1
 
-st.title("📊 Roll Profile Data Entry App")
 
-# --------------------------
-# 3. User input form
-# --------------------------
-with st.form("data_entry_form"):
-    user_name = st.text_input("Your Name")
-    values = [st.number_input(f"Diameter {i+1}", step=0.01) for i in range(17)]
-    submitted = st.form_submit_button("Submit Data")
+# -------------------------
+# App UI
+# -------------------------
+st.title("📊 Roll Profile Data Collector")
 
-if submitted:
-    if user_name.strip() == "":
-        st.error("⚠️ Please enter your name before submitting.")
+st.markdown("Enter your roll profile measurements below:")
+
+# Example input: 17 diameter values
+values = []
+for i in range(1, 18):
+    val = st.number_input(f"Diameter {i}", step=0.01, format="%.2f")
+    values.append(val)
+
+username = st.text_input("Your Name / ID")
+
+if st.button("Submit"):
+    if username.strip() == "":
+        st.warning("⚠️ Please enter your name or ID before submitting.")
     else:
-        # Append row to Google Sheet
-        row = [user_name] + values
-        sheet.append_row(row)
-        st.success("✅ Data submitted successfully!")
+        try:
+            # Save to Google Sheet
+            row = [username] + values
+            sheet.append_row(row)
+            st.success("✅ Data submitted successfully!")
+        except Exception as e:
+            st.error(f"❌ Error saving data: {e}")
 
-# --------------------------
-# 4. Show current sheet data
-# --------------------------
-st.subheader("📜 All Submitted Data")
-data = sheet.get_all_records()
-df = pd.DataFrame(data)
 
-if not df.empty:
-    st.dataframe(df)
+# -------------------------
+# View & Download History
+# -------------------------
+st.subheader("📜 Submission History")
 
-    # Download as CSV
-    csv = df.to_csv(index=False).encode("utf-8")
-    st.download_button("⬇️ Download as CSV", csv, "roll_profile_data.csv", "text/csv")
-else:
-    st.info("No data submitted yet.")
+try:
+    data = sheet.get_all_records()
+    if data:
+        df = pd.DataFrame(data)
+        st.dataframe(df)
+
+        # Download button
+        csv = df.to_csv(index=False).encode("utf-8")
+        st.download_button(
+            label="⬇️ Download CSV",
+            data=csv,
+            file_name="roll_profile_data.csv",
+            mime="text/csv"
+        )
+    else:
+        st.info("No submissions yet.")
+except Exception as e:
+    st.error(f"❌ Could not load history: {e}")
