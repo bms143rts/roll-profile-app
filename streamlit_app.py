@@ -15,38 +15,17 @@ SCOPE = [
 
 # Load credentials from Streamlit secrets
 creds_dict = st.secrets["gcp_service_account"]
-creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"],
-                                              scopes=["https://www.googleapis.com/auth/spreadsheets"])
+creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPE)
 client = gspread.authorize(creds)
+sheet = client.open(SHEET_NAME).sheet1
 
-# Open sheet
-sheet = client.open("SHEET_NAME").worksheet("Sheet1")
-
-# Get all values (not records, to avoid structure issues)
-data = sheet.get_all_values()
-
-# First row = header, rest = data
-headers = data[0]
-rows = data[1:]
-
-# Create DataFrame
-df = pd.DataFrame(rows, columns=headers)
-
-# Convert numeric columns to numbers
-for col in df.columns[2:]:  # skip Date, Roll No
-    df[col] = pd.to_numeric(df[col], errors="coerce")
-
-# Replace zeros with NaN (cleaning diameters)
-df = df.replace(0, pd.NA)
-
-st.write("Cleaned Data", df)
 # --- Roll Config ---
 DISTANCES = [100, 350, 600, 850, 1100, 1350, 1600]
 MIN_DIA = 1200.0
 MAX_DIA = 1400.0
 
 # --- Streamlit UI ---
-st.title("Backup Roll Profile Data Entry")
+st.title("Roll Profile Data Entry (Shared Google Sheet)")
 
 # Load existing data
 existing_data = sheet.get_all_records()
@@ -57,7 +36,7 @@ with st.form("entry_form", clear_on_submit=False):
     st.subheader("Add New Roll Entry")
     entry_date = st.date_input("Date", value=dt_date.today())
     roll_no = st.text_input("Roll No (required, stored in UPPERCASE)").strip().upper()
-    st.markdown("**Diameters (mm)** — must be between 1250 and 1352")
+    st.markdown("**Diameters (mm)** — must be between 1200 and 1400")
 
     diameters = {}
     for d in DISTANCES:
@@ -96,7 +75,7 @@ if submitted:
         df = pd.DataFrame(existing_data)
 
 # --- Show Data ---
-st.subheader("Stored Data ")
+st.subheader("Stored Data (Live from Google Sheet)")
 if df.empty:
     st.info("No entries yet.")
 else:
@@ -134,6 +113,3 @@ if not df.empty:
     st.download_button("⬇️ Download Word", data=to_word_bytes(df),
                        file_name="roll_data.docx",
                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
-
-
-
