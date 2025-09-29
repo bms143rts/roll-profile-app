@@ -81,12 +81,8 @@ st.subheader("Stored Data")
 if df.empty:
     st.info("No entries yet.")
 else:
-    # Format floats to 2 decimals
-    df_display = df.copy()
-    df_display[DISTANCES] = df_display[DISTANCES].applymap(
-        lambda x: f"{x:.2f}" if isinstance(x, (int, float)) and x != "" else x
-    )
-    st.table(df_display.to_dict("records"))
+    # Convert to list of dicts to hide index completely
+    st.table(df.to_dict("records"))
 
 # --- Download Functions ---
 def to_excel_bytes(df):
@@ -126,6 +122,7 @@ st.download_button(
     file_name="roll_data.docx",
     mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 )
+
 
 
 
