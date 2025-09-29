@@ -40,7 +40,7 @@ with st.form("entry_form", clear_on_submit=False):
 
     diameters = {}
     for d in DISTANCES:
-        diameters[d] = st.number_input(f"{d} mm", step=0.01, key=f"dia_{d}")
+        diameters[d] = st.number_input(f"{d} mm", step=0.01,format= %.2f, key=f"dia_{d}")
 
     submitted = st.form_submit_button("Save Entry")
 
@@ -122,5 +122,6 @@ st.download_button(
     file_name="roll_data.docx",
     mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 )
+
 
 
