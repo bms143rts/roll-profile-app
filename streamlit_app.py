@@ -35,8 +35,8 @@ df = pd.DataFrame(existing_data)
 with st.form("entry_form", clear_on_submit=False):
     st.subheader("Add New Roll Entry")
     entry_date = st.date_input("Date", value=dt_date.today())
-    roll_no = st.text_input("Roll No (required, stored in UPPERCASE)").strip().upper()
-    st.markdown("**Diameters (mm)** — must be between 1200 and 1400 (zeros will be ignored)")
+    roll_no = st.text_input("Roll No (required)").strip().upper()
+    st.markdown("**Diameters (mm)** — must be between 1250 and 1352")
 
     diameters = {}
     for d in DISTANCES:
@@ -122,4 +122,5 @@ st.download_button(
     file_name="roll_data.docx",
     mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 )
+
 
