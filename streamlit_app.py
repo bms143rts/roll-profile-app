@@ -78,7 +78,7 @@ if submitted:
 
 # --- Show Data ---
 
-st.table(df_display.to_dict("records"))
+
 
 st.subheader("Stored Data")
 if df.empty:
@@ -125,6 +125,7 @@ st.download_button(
     file_name="roll_data.docx",
     mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 )
+
 
 
 
