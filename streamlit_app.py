@@ -92,16 +92,17 @@ else:
     # Pagination (10 rows per page)
     rows_per_page = 10
     total_pages = (len(df_display) - 1) // rows_per_page + 1
-
-    page = st.number_input(
-        "Page", min_value=1, max_value=total_pages, step=1, value=1
-    )
+    page = st.number_input("Page", min_value=1, max_value=total_pages, step=1, value=1)
 
     start_idx = (page - 1) * rows_per_page
     end_idx = start_idx + rows_per_page
 
-    # ✅ Convert to dict records (removes index completely)
-    st.table(df_display.iloc[start_idx:end_idx].to_dict("records"))
+    # ✅ Drop the index before showing
+    df_page = df_display.iloc[start_idx:end_idx].reset_index(drop=True)
+
+    # ✅ Convert to dict list so index never appears
+    st.table(df_page.to_dict("records"))
+
 
 
 # --- Download Functions ---
@@ -142,6 +143,7 @@ st.download_button(
     file_name="roll_data.docx",
     mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 )
+
 
 
 
