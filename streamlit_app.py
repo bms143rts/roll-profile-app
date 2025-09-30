@@ -77,15 +77,23 @@ if submitted:
         df = pd.DataFrame(existing_data)
 
 # --- Show Data ---
-
-
-
 st.subheader("Stored Data")
 if df.empty:
     st.info("No entries yet.")
 else:
-    # Convert to list of dicts to hide index completely
-    st.table(df.to_dict("records"))
+    # Make a copy for display
+    df_display = df.copy()
+
+    # Format only the distance columns to 2 decimals
+    for col in DISTANCES:
+        if col in df_display.columns:
+            df_display[col] = pd.to_numeric(df_display[col], errors="coerce").round(2).map(
+                lambda x: f"{x:.2f}" if pd.notnull(x) else ""
+            )
+
+    # Force Streamlit to display as strings (so no extra decimals appear)
+    st.table(df_display.astype(str))
+
 
 # --- Download Functions ---
 def to_excel_bytes(df):
@@ -125,6 +133,7 @@ st.download_button(
     file_name="roll_data.docx",
     mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 )
+
 
 
 
