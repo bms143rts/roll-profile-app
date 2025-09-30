@@ -80,6 +80,7 @@ st.subheader("Stored Data")
 if df.empty:
     st.info("No entries yet.")
 else:
+    # Make a copy for display
     df_display = df.copy()
 
     # Format only the distance columns to 2 decimals
@@ -89,19 +90,20 @@ else:
                 lambda x: f"{x:.2f}" if pd.notnull(x) else ""
             )
 
+    # Reset index so 0,1,2 is not shown
+    df_display = df_display.reset_index(drop=True)
+
     # Pagination (10 rows per page)
     rows_per_page = 10
     total_pages = (len(df_display) - 1) // rows_per_page + 1
-    page = st.number_input("Page", min_value=1, max_value=total_pages, step=1, value=1)
+
+    page = st.number_input(
+        "Page", min_value=1, max_value=total_pages, step=1, value=1
+    )
 
     start_idx = (page - 1) * rows_per_page
     end_idx = start_idx + rows_per_page
-
-    # ✅ Drop the index before showing
-    df_page = df_display.iloc[start_idx:end_idx].reset_index(drop=True)
-
-    # ✅ Convert to dict list so index never appears
-    st.table(df_page.to_dict("records"))
+    st.table(df_display.iloc[start_idx:end_idx])
 
 
 
@@ -143,6 +145,7 @@ st.download_button(
     file_name="roll_data.docx",
     mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 )
+
 
 
 
