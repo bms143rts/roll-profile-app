@@ -7,7 +7,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 
 # --- Google Sheets Config ---
-SHEET_NAME = "Roll_Data"   # <-- Change if your sheet has a different name
+SHEET_NAME = "Roll_Data"
 SCOPE = [
     "https://www.googleapis.com/auth/spreadsheets",
     "https://www.googleapis.com/auth/drive"
@@ -38,18 +38,13 @@ with st.form("entry_form", clear_on_submit=False):
     roll_no = st.text_input("Roll No (required)").strip().upper()
     st.markdown("**Diameters (mm)** — must be between 1250 and 1352")
 
-   diameters = {}
-   for d in DISTANCES:
-    # Show empty field instead of 0
-     default_val = ""  
-     val = st.text_input(f"{d} mm", value=default_val, key=f"dia_{d}")
-
-    # Convert to float if user typed something
-    try:
-        diameters[d] = float(val) if val.strip() != "" else 0
-    except ValueError:
-        diameters[d] = 0
-
+    diameters = {}
+    for d in DISTANCES:
+        val = st.text_input(f"{d} mm", value="", key=f"dia_{d}")  # empty field by default
+        try:
+            diameters[d] = float(val) if val.strip() != "" else 0
+        except ValueError:
+            diameters[d] = 0
 
     submitted = st.form_submit_button("Save Entry")
 
@@ -64,7 +59,7 @@ if submitted:
     filtered_diameters = {}
     for d, v in diameters.items():
         if v == 0:
-            continue  # Skip zeros
+            continue
         if not (MIN_DIA <= v <= MAX_DIA):
             errors.append(f"❌ {d} mm value {v} out of range [{MIN_DIA}-{MAX_DIA}]")
         else:
@@ -84,25 +79,27 @@ if submitted:
         # Refresh dataframe
         existing_data = sheet.get_all_records()
         df = pd.DataFrame(existing_data)
+
 # --- Show Data ---
 st.subheader("Stored Data")
 if df.empty:
     st.info("No entries yet.")
 else:
-    # Make a copy for display
-    df_display = df.copy()
+    # Format numeric columns to 2 decimals
+    for col in df.columns:
+        if df[col].dtype in ["float64", "int64"]:
+            df[col] = df[col].map(lambda x: f"{x:.2f}" if x != "" else "")
 
-    # Format only the distance columns to 2 decimals
-    for col in DISTANCES:
-        if col in df_display.columns:
-            df_display[col] = pd.to_numeric(df_display[col], errors="coerce").round(2).map(
-                lambda x: f"{x:.2f}" if pd.notnull(x) else ""
-            )
+    # Reset index so first column is not shown
+    df = df.reset_index(drop=True)
 
-    # Force Streamlit to display as strings (so no extra decimals appear)
-    st.table(df_display.astype(str))
+    # Show only 10 rows per page
+    page_size = 10
+    page = st.number_input("Page", min_value=1, max_value=(len(df) - 1) // page_size + 1, step=1)
+    start = (page - 1) * page_size
+    end = start + page_size
 
-
+    st.table(df.iloc[start:end])
 
 # --- Download Functions ---
 def to_excel_bytes(df):
@@ -130,32 +127,15 @@ def to_word_bytes(df):
 
 # --- Download Buttons ---
 if not df.empty:
-   st.download_button(
-    "⬇️ Download Excel",
-    data=to_excel_bytes(df),
-    file_name="roll_data.xlsx",
-    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-)
-st.download_button(
-    "⬇️ Download Word",
-    data=to_word_bytes(df),
-    file_name="roll_data.docx",
-    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    st.download_button(
+        "⬇️ Download Excel",
+        data=to_excel_bytes(df),
+        file_name="roll_data.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+    st.download_button(
+        "⬇️ Download Word",
+        data=to_word_bytes(df),
+        file_name="roll_data.docx",
+        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    )
