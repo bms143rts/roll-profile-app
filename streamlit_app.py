@@ -75,7 +75,6 @@ if submitted:
         # Refresh dataframe
         existing_data = sheet.get_all_records()
         df = pd.DataFrame(existing_data)
-
 # --- Show Data ---
 st.subheader("Stored Data")
 if df.empty:
@@ -91,7 +90,7 @@ else:
                 lambda x: f"{x:.2f}" if pd.notnull(x) else ""
             )
 
-    # Reset index so 0,1,2 is not shown
+    # Reset index (but we will not show it at all)
     df_display = df_display.reset_index(drop=True)
 
     # Pagination (10 rows per page)
@@ -104,7 +103,12 @@ else:
 
     start_idx = (page - 1) * rows_per_page
     end_idx = start_idx + rows_per_page
-    st.table(df_display.iloc[start_idx:end_idx])
+
+    # Convert to records (removes index completely)
+    page_data = df_display.iloc[start_idx:end_idx].to_dict("records")
+
+    st.table(page_data)   # ✅ Now no extra first column
+
 
 
 # --- Download Functions ---
@@ -145,6 +149,7 @@ st.download_button(
     file_name="roll_data.docx",
     mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 )
+
 
 
 
