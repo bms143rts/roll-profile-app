@@ -38,9 +38,18 @@ with st.form("entry_form", clear_on_submit=False):
     roll_no = st.text_input("Roll No (required)").strip().upper()
     st.markdown("**Diameters (mm)** — must be between 1250 and 1352")
 
-    diameters = {}
-    for d in DISTANCES:
-        diameters[d] = st.number_input(f"{d} mm", step=0.01,format= "%.2f", key=f"dia_{d}")
+   diameters = {}
+   for d in DISTANCES:
+    # Show empty field instead of 0
+     default_val = ""  
+     val = st.text_input(f"{d} mm", value=default_val, key=f"dia_{d}")
+
+    # Convert to float if user typed something
+    try:
+        diameters[d] = float(val) if val.strip() != "" else 0
+    except ValueError:
+        diameters[d] = 0
+
 
     submitted = st.form_submit_button("Save Entry")
 
@@ -133,6 +142,7 @@ st.download_button(
     file_name="roll_data.docx",
     mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 )
+
 
 
 
