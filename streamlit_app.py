@@ -77,13 +77,6 @@ if submitted:
         df = pd.DataFrame(existing_data)
 
 # --- Show Data ---
-# Format numbers to 2 decimal places for display only
-df_display = df.copy()
-for col in DISTANCES:
-    if col in df_display.columns:
-        df_display[col] = df_display[col].apply(
-            lambda x: f"{x:.2f}" if pd.notnull(x) and x != "" else ""
-        )
 
 st.table(df_display.to_dict("records"))
 
@@ -132,6 +125,7 @@ st.download_button(
     file_name="roll_data.docx",
     mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 )
+
 
 
 
