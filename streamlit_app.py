@@ -7,15 +7,35 @@ import gspread
 from google.oauth2.service_account import Credentials
 
 
-# Use 'About' (with a capital A) to hide the default Streamlit menu items,
-# including the GitHub link, which hides the icon and "Fork" text.
-st.set_page_config(
-    menu_items={
-        'About': None
-    }
-)
 
-# Your existing app code follows...
+
+# Must be the first Streamlit command
+# This code block injects custom CSS to hide specific UI elements.
+hide_github_icon_style = """
+    <style>
+    /* Hides the GitHub icon and 'Fork' button */
+    .css-15tx96r {
+        visibility: hidden;
+    }
+
+    /* Hides the Streamlit hamburger menu (three dots)
+       You may want to keep this if you have menu items */
+    #MainMenu {
+        visibility: hidden;
+    }
+
+    /* Hides the Streamlit header (contains the icon and menu) */
+    header {
+        visibility: hidden;
+    }
+    </style>
+"""
+st.markdown(hide_github_icon_style, unsafe_allow_html=True)
+
+# Your existing app code goes here...
+st.title("Backup Roll Profile Data Entry")
+# ...and so on
+
 
 # --- Google Sheets Config ---
 SHEET_NAME = "Roll_Data"
@@ -150,5 +170,6 @@ if not df.empty:
         file_name="roll_data.docx",
         mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     )
+
 
 
