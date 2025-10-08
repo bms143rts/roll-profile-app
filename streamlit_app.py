@@ -6,8 +6,17 @@ from datetime import date as dt_date
 import gspread
 from google.oauth2.service_account import Credentials
 
-#---Hide github
-st.set_page_config(menu_items={'github': None})
+
+# Use 'About' (with a capital A) to hide the default Streamlit menu items,
+# including the GitHub link, which hides the icon and "Fork" text.
+st.set_page_config(
+    menu_items={
+        'About': None
+    }
+)
+
+# Your existing app code follows...
+
 # --- Google Sheets Config ---
 SHEET_NAME = "Roll_Data"
 SCOPE = [
@@ -141,4 +150,5 @@ if not df.empty:
         file_name="roll_data.docx",
         mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     )
+
 
