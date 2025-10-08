@@ -7,30 +7,36 @@ import gspread
 from google.oauth2.service_account import Credentials
 
 
+import streamlit as st
 
-
-# Must be the first Streamlit command
-# This code block injects custom CSS to hide specific UI elements.
-hide_github_icon_style = """
+hide_streamlit_ui = """
     <style>
-    /* Hides the GitHub icon and 'Fork' button */
-    .css-15tx96r {
-        visibility: hidden;
+    /* 1. HIDE TOP-RIGHT ICONS (Profile, Manage App, etc.) */
+    [data-testid="stToolbar"] {
+        visibility: hidden !important;
     }
 
-    /* Hides the Streamlit hamburger menu (three dots)
-       You may want to keep this if you have menu items */
+    /* 2. HIDE BOTTOM STATUS/FOOTER WIDGETS (e.g., Streamlit status/deploy) */
+    [data-testid="stStatusWidget"] {
+        visibility: hidden !important;
+        height: 0; /* Ensures it doesn't take up space */
+        overflow: hidden; /* Ensures no scrollbar */
+    }
+
+    /* Optional: Hides the three-dot menu, if not already hidden */
     #MainMenu {
         visibility: hidden;
     }
 
-    /* Hides the Streamlit header (contains the icon and menu) */
-    header {
+    /* Optional: Hides the "Made with Streamlit" footer text */
+    footer {
         visibility: hidden;
     }
     </style>
 """
-st.markdown(hide_github_icon_style, unsafe_allow_html=True)
+st.markdown(hide_streamlit_ui, unsafe_allow_html=True)
+
+# Your app code continues below...
 
 
 # --- Google Sheets Config ---
@@ -166,6 +172,7 @@ if not df.empty:
         file_name="roll_data.docx",
         mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     )
+
 
 
 
