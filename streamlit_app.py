@@ -36,6 +36,32 @@ hide_streamlit_ui = """
 """
 st.markdown(hide_streamlit_ui, unsafe_allow_html=True)
 
+
+# Must be the first Streamlit command for global settings
+st.set_page_config(layout="wide")
+
+hide_bottom_right_icon = """
+    <style>
+    /* Targets the bottom-right status widget, which includes the profile/manage app link */
+    [data-testid="stStatusWidget"] {
+        visibility: hidden !important;
+        height: 0px !important;
+        overflow: hidden !important;
+    }
+    
+    /* Optional: Hide the entire footer just in case it's part of that container */
+    footer {
+        visibility: hidden !important;
+    }
+    </style>
+"""
+st.markdown(hide_bottom_right_icon, unsafe_allow_html=True)
+
+# Your app content follows below...
+st.title("Backup Roll Profile Data Entry")
+# ...
+
+
 # Your app code continues below...
 
 
@@ -172,6 +198,7 @@ if not df.empty:
         file_name="roll_data.docx",
         mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     )
+
 
 
 
