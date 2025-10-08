@@ -32,10 +32,6 @@ hide_github_icon_style = """
 """
 st.markdown(hide_github_icon_style, unsafe_allow_html=True)
 
-# Your existing app code goes here...
-st.title("Backup Roll Profile Data Entry")
-# ...and so on
-
 
 # --- Google Sheets Config ---
 SHEET_NAME = "Roll_Data"
@@ -170,6 +166,7 @@ if not df.empty:
         file_name="roll_data.docx",
         mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     )
+
 
 
 
