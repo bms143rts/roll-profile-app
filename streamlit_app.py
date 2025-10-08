@@ -6,6 +6,8 @@ from datetime import date as dt_date
 import gspread
 from google.oauth2.service_account import Credentials
 
+#---Hide github
+st.set_page_config(menu_items={'github': None})
 # --- Google Sheets Config ---
 SHEET_NAME = "Roll_Data"
 SCOPE = [
@@ -139,3 +141,4 @@ if not df.empty:
         file_name="roll_data.docx",
         mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     )
+
