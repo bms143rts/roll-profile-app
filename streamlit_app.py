@@ -10,7 +10,11 @@ import streamlit as st
 
 hide_streamlit_style = """
     <style>
+    #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
+    header {visibility: hidden;}
+    .stDeployButton {display: none;}
+    div[data-testid="stDecoration"] {visibility: hidden;}
     </style>
 """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
@@ -183,6 +187,7 @@ if not df.empty:
         file_name="roll_data.docx",
         mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     )
+
 
 
 
