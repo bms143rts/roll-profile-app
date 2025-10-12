@@ -6,7 +6,14 @@ from datetime import date as dt_date
 import gspread
 from google.oauth2.service_account import Credentials
 
-
+st.set_page_config
+(
+    initial_sidebar_state="expanded",
+    menu_items={
+        'Get Help': None,
+        'Report a bug': None,
+        'About': None}
+)
 import streamlit as st
 
 hide_streamlit_ui = """
@@ -176,6 +183,7 @@ if not df.empty:
         file_name="roll_data.docx",
         mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     )
+
 
 
 
