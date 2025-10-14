@@ -252,7 +252,7 @@ with st.container():
         with col1:
             position = st.selectbox("📍 Position", ['TOP', 'BOTTOM'])
         with col2:
-            crown = st.selectbox("Crown", ['STRAIGHT', '+100 MICRON', '+200 MICRON'])
+            crown = st.selectbox("Crown", ['STRAIGHT', '+100µ', '+200μ'])
 
         st.markdown('<p class="diameter-label">📏 Diameters (mm) — must be between 1250 and 1352</p>', unsafe_allow_html=True)
         
@@ -375,3 +375,4 @@ with st.container():
         st.markdown('</div>', unsafe_allow_html=True)
 
     st.markdown('</div>', unsafe_allow_html=True)
+
