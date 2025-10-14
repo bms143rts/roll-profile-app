@@ -51,7 +51,7 @@ st.markdown(hide_streamlit_ui, unsafe_allow_html=True)
 # Must be the first Streamlit command for global settings
 st.set_page_config(layout="wide")
 
-# Your app code continues below...
+
 
 
 # --- Google Sheets Config ---
@@ -69,8 +69,8 @@ sheet = client.open(SHEET_NAME).sheet1
 
 # --- Roll Config ---
 DISTANCES = [100, 350, 600, 850, 1100, 1350, 1600]
-MIN_DIA = 1200.0
-MAX_DIA = 1400.0
+MIN_DIA = 1245.0
+MAX_DIA = 1352.0
 
 # --- Streamlit UI ---
 st.title("Backup Roll Profile Data Entry")
@@ -85,6 +85,10 @@ with st.form("entry_form", clear_on_submit=False):
     entry_date = st.date_input("Date", value=dt_date.today())
     roll_no = st.text_input("Roll No (required)").strip().upper()
     st.markdown("**Diameters (mm)** — must be between 1250 and 1352")
+
+    stand = st.selectbox("Stand", ['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'ROUGHING', 'DC'])
+    position = st.selectbox("Position", ['TOP', 'BOTTOM'])
+    crown = st.selectbox("Crown", ['STRAIGHT', '+100 MICRON', '+200 MICRON'])
 
     diameters = {}
     for d in DISTANCES:
@@ -187,6 +191,7 @@ if not df.empty:
         file_name="roll_data.docx",
         mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     )
+
 
 
 
