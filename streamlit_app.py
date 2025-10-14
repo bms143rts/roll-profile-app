@@ -257,7 +257,7 @@ with st.container():
         st.markdown('<p class="diameter-label">📏 Diameters (mm) — must be between 1250 and 1352</p>', unsafe_allow_html=True)
         
         # Create 3 columns for diameter inputs
-        cols = st.columns(4)
+        cols = st.columns(1)
         diameters = {}
         for idx, d in enumerate(DISTANCES):
             col_idx = idx % 4
@@ -378,5 +378,6 @@ with st.container():
         st.markdown('</div>', unsafe_allow_html=True)
 
     st.markdown('</div>', unsafe_allow_html=True)
+
 
 
