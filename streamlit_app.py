@@ -254,7 +254,7 @@ with st.container():
         with col2:
             crown = st.selectbox("Crown", ['STRAIGHT', '+100 MICRON', '+200 MICRON'])
 
-        st.markdown('<p class="diameter-label">📏 Diameters (mm) — must be between 1245 and 1352</p>', unsafe_allow_html=True)
+        st.markdown('<p class="diameter-label">📏 Diameters (mm) — must be between 1250 and 1352</p>', unsafe_allow_html=True)
         
         # Create 3 columns for diameter inputs
         cols = st.columns(4)
@@ -378,4 +378,5 @@ with st.container():
         st.markdown('</div>', unsafe_allow_html=True)
 
     st.markdown('</div>', unsafe_allow_html=True)
+
 
