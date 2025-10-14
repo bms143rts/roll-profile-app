@@ -153,47 +153,6 @@ else:
 
     st.table(df.iloc[start:end])
 
-# ---------------- SCROLLABLE TABLE DISPLAY ----------------
-st.markdown("### 📋 Roll Data Preview")
-
-# Convert DataFrame to HTML
-table_html = df_page.to_html(index=False, justify='center', classes='scroll-table')
-
-# CSS for horizontal scroll
-scroll_style = """
-<style>
-.scroll-container {
-    overflow-x: auto;
-    padding-bottom: 10px;
-}
-.scroll-table {
-    border-collapse: collapse;
-    width: 100%;
-    min-width: 1200px;
-}
-.scroll-table th, .scroll-table td {
-    border: 1px solid #bbb;
-    padding: 6px 10px;
-    text-align: center;
-}
-.scroll-table th {
-    background-color: #f0f0f0;
-    position: sticky;
-    top: 0;
-    z-index: 1;
-}
-</style>
-<div class="scroll-container">
-    {{TABLE}}
-</div>
-"""
-
-# Display scrollable table
-st.markdown(scroll_style.replace("{{TABLE}}", table_html), unsafe_allow_html=True)
-
-# ---------------- DOWNLOAD CSV OPTION ----------------
-csv = df.to_csv(index=False).encode('utf-8')
-st.download_button("📥 Download Full Data as CSV", csv, "roll_profile_data.csv", "text/csv")
 
 # --- Download Functions ---
 def to_excel_bytes(df):
@@ -233,6 +192,7 @@ if not df.empty:
         file_name="roll_data.docx",
         mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     )
+
 
 
 
