@@ -226,7 +226,7 @@ MAX_DIA = 1352.0
 st.markdown("""
     <div class="main-header">
         <h1>📊 Backup Roll Profile Data Entry</h1>
-        
+        <p>Manage and track roll with ease</p>
     </div>
 """, unsafe_allow_html=True)
 
@@ -250,23 +250,20 @@ with st.container():
 
         col1, col2 = st.columns(2)
         with col1:
-            position = st.selectbox("Position", ['TOP', 'BOTTOM'])
+            position = st.selectbox("📍 Position", ['TOP', 'BOTTOM'])
         with col2:
             crown = st.selectbox("Crown", ['STRAIGHT', '+100 MICRON', '+200 MICRON'])
 
         st.markdown('<p class="diameter-label">📏 Diameters (mm) — must be between 1250 and 1352</p>', unsafe_allow_html=True)
         
-        # Create 3 columns for diameter inputs
-        cols = st.columns(4)
+        # Single column for diameter inputs
         diameters = {}
-        for idx, d in enumerate(DISTANCES):
-            col_idx = idx % 4
-            with cols[col_idx]:
-                val = st.text_input(f"{d} mm", value="", key=f"dia_{d}", placeholder="Enter value")
-                try:
-                    diameters[d] = float(val) if val.strip() != "" else 0
-                except ValueError:
-                    diameters[d] = 0
+        for d in DISTANCES:
+            val = st.text_input(f"{d} mm", value="", key=f"dia_{d}", placeholder="Enter value")
+            try:
+                diameters[d] = float(val) if val.strip() != "" else 0
+            except ValueError:
+                diameters[d] = 0
 
         submitted = st.form_submit_button("💾 Save Entry", use_container_width=True)
 
@@ -378,7 +375,3 @@ with st.container():
         st.markdown('</div>', unsafe_allow_html=True)
 
     st.markdown('</div>', unsafe_allow_html=True)
-
-
-
-
