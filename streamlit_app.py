@@ -593,15 +593,15 @@ try:
     html_table = render_merged_roll_table(plot_df, selected_roll)
     st.markdown(html_table, unsafe_allow_html=True)
 except Exception as e:
-    st.error(f"Could not render formatted table")
+    st.error(f"Could not render table")
 
 
-                            # pivot table
-
+                        
     
 
 
                           
+
 
 
 
