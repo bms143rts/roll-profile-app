@@ -385,42 +385,38 @@ st.markdown("## 📈 Plot Roll Profile")
 if df.empty:
     st.info("No data to plot.")
 else:
-    # Helper to normalize and find columns (works on a DataFrame copy)
-    def find_col_by_candidates(df_cols, candidates):
-        cols_map = {c.strip().lower(): c for c in df_cols}
+    # ---- utils ----
+    def find_col_by_candidates(col_list, candidates):
+        cols_map = {c.strip().lower(): c for c in col_list}
         for cand in candidates:
             cand_norm = cand.strip().lower()
             if cand_norm in cols_map:
                 return cols_map[cand_norm]
         return None
 
-    # Make a normalized copy to work with but keep original column names mapping
-    orig_cols = list(df.columns)
-    norm_map = {c: c.strip() for c in orig_cols}  # we'll strip leading/trailing spaces
+    # make a safe working copy (strip headers)
     df_plot = df.copy()
-    df_plot.rename(columns=norm_map, inplace=True)
+    df_plot.rename(columns={c: c.strip() for c in df_plot.columns}, inplace=True)
     norm_cols = list(df_plot.columns)
 
-    # Find Date and Roll columns from normalized column names
+    # find date & roll columns (case-insensitive, common variants)
     date_col = find_col_by_candidates(norm_cols, ["date", "entry date", "entry_date", "Date"])
     roll_col = find_col_by_candidates(norm_cols, ["roll no", "rollno", "roll_no", "roll", "Roll No", "Roll"])
 
     if date_col is None or roll_col is None:
-        st.error("Could not find required 'Date' or 'Roll No' columns in the sheet. Found columns: " + ", ".join(norm_cols))
+        st.error("Could not find required 'Date' or 'Roll No' columns. Found columns: " + ", ".join(norm_cols))
     else:
-        # Ensure Date is datetime where possible and produce a label
+        # ensure date label
         try:
             df_plot[date_col] = pd.to_datetime(df_plot[date_col])
             df_plot["_date_label"] = df_plot[date_col].dt.strftime("%Y-%m-%d")
         except Exception:
             df_plot["_date_label"] = df_plot[date_col].astype(str)
 
-        # Detect distance columns robustly by extracting the first integer number in the header
-        desired_distances = [100, 350, 600, 850, 1100, 1350, 1600]  # integers
-        found_distance_cols = []  # list of tuples (distance_int, original_col_name)
-
+        # detect distance columns by extracting first integer in header
+        desired_distances = [100, 350, 600, 850, 1100, 1350, 1600]
+        found_distance_cols = []
         for col in norm_cols:
-            # extract first integer (or integer part of float) from column text
             m = re.search(r"(\d+)", str(col))
             if m:
                 try:
@@ -428,25 +424,26 @@ else:
                 except:
                     continue
                 if dist in desired_distances:
-                    # append the *original* column name in df_plot (which we normalized by strip)
                     found_distance_cols.append((dist, col))
 
-        # Ensure we maintain the order of desired_distances
+        # sort by the desired order if present
         found_distance_cols = sorted(found_distance_cols, key=lambda x: desired_distances.index(x[0])) if found_distance_cols else []
 
         if not found_distance_cols:
-            st.error("No distance columns (100, 350, 600, ...) detected. Sheet columns: " + ", ".join(norm_cols))
+            st.error("No distance columns (100,350,600,...) detected. Sheet columns: " + ", ".join(norm_cols))
         else:
-            # Let user pick roll id
+            # choose Roll No
             roll_options = sorted(df_plot[roll_col].astype(str).unique())
             selected_roll = st.selectbox("Select Roll No", ["-- choose --"] + roll_options)
+
+            # Debug toggle to display column info and types
+            debug = st.checkbox("Show debug info (headers & sample rows)", value=False)
 
             if selected_roll and selected_roll != "-- choose --":
                 roll_rows = df_plot[df_plot[roll_col].astype(str) == str(selected_roll)].copy()
                 if roll_rows.empty:
                     st.warning("No rows for that Roll No.")
                 else:
-                    # list of date labels for this roll
                     date_options = roll_rows["_date_label"].tolist()
                     default_dates = [date_options[-1]] if date_options else []
                     chosen_dates = st.multiselect(
@@ -458,7 +455,7 @@ else:
                     if not chosen_dates:
                         st.info("Select at least one date to plot.")
                     else:
-                        # build long dataframe
+                        # build long-form data for plotting
                         rows = []
                         for _, r in roll_rows.iterrows():
                             label = r["_date_label"]
@@ -467,10 +464,10 @@ else:
                             for d, colname in found_distance_cols:
                                 raw = r.get(colname, None)
                                 try:
-                                    # handle strings with commas, extra spaces etc.
                                     if raw is None or str(raw).strip() == "":
                                         val = None
                                     else:
+                                        # strip commas and whitespace before converting
                                         val = float(str(raw).strip().replace(",", ""))
                                 except Exception:
                                     val = None
@@ -482,25 +479,60 @@ else:
                         else:
                             plot_df = pd.DataFrame(rows).sort_values(["DateLabel", "Distance"])
 
-                            # Altair chart
+                            # compute axis domains
+                            min_dist = int(plot_df["Distance"].min())
+                            max_dist = int(plot_df["Distance"].max())
+
+                            # y-domain mode: either data-driven or fixed to manufacturing MIN/MAX
+                            y_mode = st.radio("Y-axis range mode", ["Data-driven (tight)", "Fixed to MIN/MAX (recommended)"], index=1)
+
+                            if y_mode.startswith("Data"):
+                                y_min = float(plot_df["Diameter"].min())
+                                y_max = float(plot_df["Diameter"].max())
+                                y_padding = max(1.0, (y_max - y_min) * 0.02)
+                                y_domain = [max(MIN_DIA, y_min - y_padding), min(MAX_DIA, y_max + y_padding)]
+                            else:
+                                margin = (MAX_DIA - MIN_DIA) * 0.03
+                                y_domain = [MIN_DIA - margin, MAX_DIA + margin]
+
+                            # prepare Altair chart with explicit domains and ticks
+                            x_axis_values = [d for d, _ in found_distance_cols]
                             base = alt.Chart(plot_df).encode(
-                                x=alt.X("Distance:Q", title="Distance (mm)"),
-                                y=alt.Y("Diameter:Q", title="Diameter (mm)"),
+                                x=alt.X("Distance:Q",
+                                        title="Distance (mm)",
+                                        scale=alt.Scale(domain=[min_dist, max_dist]),
+                                        axis=alt.Axis(values=x_axis_values)
+                                       ),
+                                y=alt.Y("Diameter:Q",
+                                        title="Diameter (mm)",
+                                        scale=alt.Scale(domain=y_domain),
+                                        axis=alt.Axis(tickMinStep=5)
+                                       ),
                                 color=alt.Color("DateLabel:N", title="Date"),
                                 tooltip=["DateLabel", "Distance", alt.Tooltip("Diameter", format=".2f")]
                             )
 
-                            chart = base.mark_line(point=True).interactive().properties(height=420)
+                            chart = base.mark_line(point=True, interpolate="monotone").interactive().properties(height=420)
                             st.altair_chart(chart, use_container_width=True)
 
-                            # sample table (pivot)
+                            # show pivot/sample table
                             pivot = plot_df.pivot_table(index="Distance", columns="DateLabel", values="Diameter")
                             st.markdown("**Data plotted (sample):**")
                             st.dataframe(pivot.reset_index(), use_container_width=True)
 
-# debug: show helpful diagnostics (remove in prod)
-st.write("Columns:", list(df_plot.columns))
-st.write(df_plot.head(5).to_dict("records"))
+                            # show diagnostics if debug enabled
+                            if debug:
+                                st.markdown("**Detected columns:**")
+                                st.write("All headers:", norm_cols)
+                                st.write("Date column:", date_col)
+                                st.write("Roll column:", roll_col)
+                                st.write("Found distance columns (distance, header):", found_distance_cols)
+                                st.write("Plot dataframe dtypes:")
+                                st.write(plot_df.dtypes.to_dict())
+                                st.write("Sample rows:")
+                                st.write(plot_df.head().to_dict("records"))
+
+
 
 
 
