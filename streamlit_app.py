@@ -277,11 +277,12 @@ if not df.empty:
         st.markdown("### 📈 Roll Profile Visualization")
         
         # Roll selection for chart
-        roll_options = df['Roll No'].unique().tolist()
-        selected_roll = st.selectbox("Select Roll No to visualize:", roll_options)
-        
-        if selected_roll:
-            roll_data = df[df['Roll No'] == selected_roll].iloc[0]
+        if 'Roll No' in df.columns:
+            roll_options = df['Roll No'].unique().tolist()
+            selected_roll = st.selectbox("Select Roll No to visualize:", roll_options)
+            
+            if selected_roll:
+                roll_data = df[df['Roll No'] == selected_roll].iloc[0]
             
             # Extract diameter values
             chart_positions = []
@@ -332,13 +333,15 @@ if not df.empty:
                 with col1:
                     st.metric("Date", roll_data.get('Date', 'N/A'))
                 with col2:
-                    st.metric("Stand", roll_data.get('stand', 'N/A'))
+                    st.metric("Stand", roll_data.get('stand', roll_data.get('Stand', 'N/A')))
                 with col3:
-                    st.metric("Position", roll_data.get('position', 'N/A'))
+                    st.metric("Position", roll_data.get('position', roll_data.get('Position', 'N/A')))
                 with col4:
-                    st.metric("Crown", roll_data.get('crown', 'N/A'))
+                    st.metric("Crown", roll_data.get('crown', roll_data.get('Crown', 'N/A')))
             else:
                 st.warning("⚠️ No diameter data available for this roll.")
+        else:
+            st.info("No roll data available yet.")
         
         st.markdown('</div>', unsafe_allow_html=True)
 
