@@ -526,11 +526,11 @@ else:
                             st.altair_chart(chart, use_container_width=True)
 
                             # pivot table
-                            pivot = plot_df.pivot_table(
-                                index="Distance", columns="DateLabel", values="Diameter"
-                            )
+                           # simpler table – shows Distance, Diameter, and Date in rows
                             st.markdown("**Data plotted (sample):**")
-                            st.dataframe(pivot.reset_index(), use_container_width=True)
+                            display_df = plot_df[["DateLabel", "Distance", "Diameter"]].sort_values(["DateLabel", "Distance"])
+                            st.dataframe(display_df, use_container_width=True)
+
 
                             # --- download helpers ---
                             def export_chart_png(chart_obj, plot_df_local):
@@ -583,7 +583,7 @@ else:
                             csv_bytes = plot_df.to_csv(index=False).encode("utf-8")
 
                             # --- download buttons ---
-                            st.markdown("#### ⬇️ Download")
+                            st.markdown("#### ⬇️ Download Profile ")
                             c1 = st.columns(1)
                             st.download_button(
                                        "Download PNG",
@@ -599,6 +599,7 @@ else:
 
 
                           
+
 
 
 
