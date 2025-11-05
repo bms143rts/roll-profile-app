@@ -596,17 +596,7 @@ else:
                                     )
                                 else:
                                     st.info("PNG export not available.")
-                            with c2:
-                                if svg_bytes:
-                                    st.download_button(
-                                        "Download SVG",
-                                        data=svg_bytes,
-                                        file_name=f"roll_profile_{selected_roll}.svg",
-                                        mime="image/svg+xml",
-                                        use_container_width=True,
-                                    )
-                                else:
-                                    st.caption("SVG export requires `altair_saver`.")
+                       
                             with c3:
                                 st.download_button(
                                     "Download CSV",
@@ -621,6 +611,7 @@ else:
 
 
                           
+
 
 
 
