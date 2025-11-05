@@ -276,13 +276,39 @@ if not df.empty:
         st.markdown('<div class="data-section">', unsafe_allow_html=True)
         st.markdown("### 📈 Roll Profile Visualization")
         
+        # Debug: Show available columns
+        st.write("Available columns:", df.columns.tolist())
+        
         # Roll selection for chart
         if 'Roll No' in df.columns:
             roll_options = df['Roll No'].unique().tolist()
+        else:
+            # Try to find the roll number column with different possible names
+            possible_roll_cols = ['Roll No', 'roll no', 'Roll_No', 'roll_no', 'RollNo', 'rollno']
+            roll_col = None
+            for col in possible_roll_cols:
+                if col in df.columns:
+                    roll_col = col
+                    break
+            
+            if roll_col:
+                roll_options = df[roll_col].unique().tolist()
+            else:
+                st.error("❌ Could not find 'Roll No' column in the data")
+                roll_options = []
+        
+        if roll_options:
             selected_roll = st.selectbox("Select Roll No to visualize:", roll_options)
             
             if selected_roll:
-                roll_data = df[df['Roll No'] == selected_roll].iloc[0]
+                # Find the roll data
+                if 'Roll No' in df.columns:
+                    roll_data = df[df['Roll No'] == selected_roll].iloc[0]
+                else:
+                    roll_data = df[df[roll_col] == selected_roll].iloc[0]
+                
+                # Debug: Show roll data
+                st.write("Roll data columns:", roll_data.index.tolist())
             
             # Extract diameter values
             chart_positions = []
