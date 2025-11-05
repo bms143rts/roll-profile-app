@@ -519,18 +519,7 @@ else:
                             st.markdown("**Data plotted (sample):**")
                             st.dataframe(pivot.reset_index(), use_container_width=True)
 
-                            # show diagnostics if debug enabled
-                            if debug:
-                                st.markdown("**Detected columns:**")
-                                st.write("All headers:", norm_cols)
-                                st.write("Date column:", date_col)
-                                st.write("Roll column:", roll_col)
-                                st.write("Found distance columns (distance, header):", found_distance_cols)
-                                st.write("Plot dataframe dtypes:")
-                                st.write(plot_df.dtypes.to_dict())
-                                st.write("Sample rows:")
-                                st.write(plot_df.head().to_dict("records"))
-
+                          
 
 
 
