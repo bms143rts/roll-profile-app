@@ -5,7 +5,6 @@ from docx import Document
 from datetime import date as dt_date
 import gspread
 from google.oauth2.service_account import Credentials
-import plotly.graph_objects as go
 
 # Hide Streamlit UI elements
 hide_streamlit_ui = """
@@ -293,67 +292,22 @@ if not df.empty:
                     diameters.append(float(roll_data[col_name].replace(',', '')))
             
             if positions and diameters:
-                # Create plotly chart
-                fig = go.Figure()
+                # Create chart data
+                chart_df = pd.DataFrame({
+                    'Position (mm)': positions,
+                    'Measured Diameter (mm)': diameters
+                })
                 
-                # Add measured diameter line
-                fig.add_trace(go.Scatter(
-                    x=positions,
-                    y=diameters,
-                    mode='lines+markers',
-                    name='Measured Diameter',
-                    line=dict(color='#ff7f0e', width=2),
-                    marker=dict(size=8, color='#ff7f0e'),
-                    text=[f'{d:.2f}' for d in diameters],
-                    textposition='top center',
-                    textfont=dict(size=10)
-                ))
-                
-                # Add ideal profile line (straight line at average)
+                # Add ideal profile (average)
                 avg_dia = sum(diameters) / len(diameters)
-                fig.add_trace(go.Scatter(
-                    x=positions,
-                    y=[avg_dia] * len(positions),
-                    mode='lines',
-                    name='Ideal Profile',
-                    line=dict(color='#1f77b4', width=2, dash='dash')
-                ))
+                chart_df['Ideal Profile (mm)'] = avg_dia
                 
-                # Update layout
-                fig.update_layout(
-                    title=f'{selected_roll}',
-                    xaxis_title='Position (mm)',
-                    yaxis_title='Diameter (mm)',
-                    hovermode='x unified',
+                # Display line chart
+                st.line_chart(
+                    chart_df.set_index('Position (mm)'),
                     height=500,
-                    plot_bgcolor='white',
-                    paper_bgcolor='white',
-                    font=dict(size=12),
-                    showlegend=True,
-                    legend=dict(
-                        orientation="h",
-                        yanchor="bottom",
-                        y=1.02,
-                        xanchor="right",
-                        x=1
-                    )
+                    use_container_width=True
                 )
-                
-                # Update axes
-                fig.update_xaxis(
-                    showgrid=True,
-                    gridwidth=1,
-                    gridcolor='lightgray',
-                    zeroline=False
-                )
-                fig.update_yaxis(
-                    showgrid=True,
-                    gridwidth=1,
-                    gridcolor='lightgray',
-                    zeroline=False
-                )
-                
-                st.plotly_chart(fig, use_container_width=True)
                 
                 # Display roll information
                 col1, col2, col3, col4 = st.columns(4)
