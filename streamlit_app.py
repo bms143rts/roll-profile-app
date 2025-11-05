@@ -247,13 +247,13 @@ with st.container():
         with col2:
             roll_no = st.text_input("🏷️ Roll No (required)").strip().upper()
         with col3:
-            stand = st.selectbox("🏭 Stand", ['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'ROUGHING', 'DC'])
+            stand = st.selectbox(" Stand", ['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'ROUGHING', 'DC'])
 
         col1, col2 = st.columns(2)
         with col1:
             position = st.selectbox("📍 Position", ['TOP', 'BOTTOM'])
         with col2:
-            crown = st.selectbox("👑 Crown", ['STRAIGHT', '+100 MICRON', '+200 MICRON'])
+            crown = st.selectbox(" Crown", ['STRAIGHT', '+100 MICRON', '+200 MICRON'])
 
         st.markdown('<p class="diameter-label">📏 Diameters (mm) — must be between 1245 and 1352</p>', unsafe_allow_html=True)
         
@@ -378,3 +378,4 @@ with st.container():
         st.markdown('</div>', unsafe_allow_html=True)
 
     st.markdown('</div>', unsafe_allow_html=True)
+
