@@ -270,100 +270,7 @@ with st.container():
 
     st.markdown('</div>', unsafe_allow_html=True)
 
-# --- Chart Visualization Section ---
-if not df.empty:
-    with st.container():
-        st.markdown('<div class="data-section">', unsafe_allow_html=True)
-        st.markdown("### 📈 Roll Profile Visualization")
-        
-        # Roll selection for chart
-        if 'Roll No' in df.columns:
-            roll_options = df['Roll No'].unique().tolist()
-        else:
-            # Try to find the roll number column with different possible names
-            possible_roll_cols = ['Roll No', 'roll no', 'Roll_No', 'roll_no', 'RollNo', 'rollno']
-            roll_col = None
-            for col in possible_roll_cols:
-                if col in df.columns:
-                    roll_col = col
-                    break
-            
-            if roll_col:
-                roll_options = df[roll_col].unique().tolist()
-            else:
-                st.error("❌ Could not find 'Roll No' column in the data")
-                roll_options = []
-        
-        if roll_options:
-            selected_roll = st.selectbox("Select Roll No to visualize:", roll_options)
-            
-            if selected_roll:
-                # Find the roll data
-                if 'Roll No' in df.columns:
-                    roll_data = df[df['Roll No'] == selected_roll].iloc[0]
-                else:
-                    roll_data = df[df[roll_col] == selected_roll].iloc[0]
-            
-            # Extract diameter values
-            chart_positions = []
-            chart_diameters = []
-            for dist in DISTANCES:
-                # Try both string and integer column names
-                col_name = None
-                if str(dist) in roll_data:
-                    col_name = str(dist)
-                elif dist in roll_data:
-                    col_name = dist
-                
-                if col_name is not None:
-                    val = roll_data[col_name]
-                    # Convert to string and check if it has a value
-                    val_str = str(val).strip()
-                    if val_str != "" and val_str != "0.00" and val_str != "0" and val_str.lower() != "nan":
-                        try:
-                            # Remove commas and convert to float
-                            chart_positions.append(dist)
-                            chart_diameters.append(float(val_str.replace(',', '')))
-                        except (ValueError, AttributeError):
-                            continue
-            
-            if chart_positions and chart_diameters:
-                # Create chart data
-                chart_df = pd.DataFrame({
-                    'Position (mm)': chart_positions,
-                    'Diameter (mm)': chart_diameters
-                })
-                
-                # Display line chart with proper styling
-                st.line_chart(
-                    chart_df.set_index('Position (mm)'),
-                    height=400,
-                    use_container_width=True,
-                    color='#1f77b4'
-                )
-                
-                # Display data table below chart
-                st.markdown("##### 📊 Profile Data")
-                display_chart_df = chart_df.copy()
-                display_chart_df.columns = ['Position', 'Diameter']
-                st.dataframe(display_chart_df, use_container_width=True, hide_index=True)
-                
-                # Display roll information
-                col1, col2, col3, col4 = st.columns(4)
-                with col1:
-                    st.metric("Date", roll_data.get('Date', 'N/A'))
-                with col2:
-                    st.metric("Stand", roll_data.get('stand', roll_data.get('Stand', 'N/A')))
-                with col3:
-                    st.metric("Position", roll_data.get('position', roll_data.get('Position', 'N/A')))
-                with col4:
-                    st.metric("Crown", roll_data.get('crown', roll_data.get('Crown', 'N/A')))
-            else:
-                st.warning("⚠️ No diameter data available for this roll.")
-        else:
-            st.info("No roll data available yet.")
-        
-        st.markdown('</div>', unsafe_allow_html=True)
+
 
 # --- Save Entry ---
 if submitted:
@@ -471,3 +378,4 @@ with st.container():
         st.markdown('</div>', unsafe_allow_html=True)
 
     st.markdown('</div>', unsafe_allow_html=True)
+
