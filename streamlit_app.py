@@ -385,46 +385,43 @@ import matplotlib.pyplot as plt
 
 st.markdown("## 📈 Plot Roll Profile")
 
-# If your main app defines MIN_DIA / MAX_DIA above, this will use them.
-# If not, set sensible defaults here:
-try:
-    MIN_DIA  # noqa: F821
-except NameError:
+# ensure min/max constants exist
+if "MIN_DIA" not in locals():
     MIN_DIA = 1245.0
+if "MAX_DIA" not in locals():
     MAX_DIA = 1352.0
 
 if df.empty:
     st.info("No data to plot.")
 else:
-    # ---- helpers ----
+    # --- helpers ---
     def find_col_by_candidates(col_list, candidates):
         cols_map = {c.strip().lower(): c for c in col_list}
         for cand in candidates:
-            cand_norm = cand.strip().lower()
-            if cand_norm in cols_map:
-                return cols_map[cand_norm]
+            if cand.strip().lower() in cols_map:
+                return cols_map[cand.strip().lower()]
         return None
 
-    # safe working copy (strip headers)
+    # clean column headers
     df_plot = df.copy()
     df_plot.rename(columns={c: c.strip() for c in df_plot.columns}, inplace=True)
     norm_cols = list(df_plot.columns)
 
-    # find Date and Roll columns (common variants)
-    date_col = find_col_by_candidates(norm_cols, ["date", "entry date", "entry_date", "Date"])
-    roll_col = find_col_by_candidates(norm_cols, ["roll no", "rollno", "roll_no", "roll", "Roll No", "Roll"])
+    # find key columns
+    date_col = find_col_by_candidates(norm_cols, ["date", "entry date", "entry_date"])
+    roll_col = find_col_by_candidates(norm_cols, ["roll no", "rollno", "roll_no", "roll"])
 
     if date_col is None or roll_col is None:
-        st.error("Could not find required 'Date' or 'Roll No' columns. Found columns: " + ", ".join(norm_cols))
+        st.error("Could not find required 'Date' or 'Roll No' columns in sheet.")
     else:
-        # Normalize date -> string label
+        # format date labels
         try:
             df_plot[date_col] = pd.to_datetime(df_plot[date_col])
             df_plot["_date_label"] = df_plot[date_col].dt.strftime("%Y-%m-%d")
         except Exception:
             df_plot["_date_label"] = df_plot[date_col].astype(str)
 
-        # Detect distance columns by extracting the first integer in header
+        # detect distance columns (100, 350, 600, ...)
         desired_distances = [100, 350, 600, 850, 1100, 1350, 1600]
         found_distance_cols = []
         for col in norm_cols:
@@ -432,23 +429,21 @@ else:
             if m:
                 try:
                     dist = int(m.group(1))
-                except:
-                    continue
+                except Exception:
+                    dist = None
                 if dist in desired_distances:
                     found_distance_cols.append((dist, col))
 
-        # sort by the desired order if present
-        found_distance_cols = sorted(found_distance_cols, key=lambda x: desired_distances.index(x[0])) if found_distance_cols else []
+        found_distance_cols = sorted(
+            found_distance_cols, key=lambda x: desired_distances.index(x[0])
+        )
 
         if not found_distance_cols:
-            st.error("No distance columns (100,350,600,...) detected. Sheet columns: " + ", ".join(norm_cols))
+            st.error("No distance columns (100,350,...) found in sheet.")
         else:
             # Roll selection
             roll_options = sorted(df_plot[roll_col].astype(str).unique())
             selected_roll = st.selectbox("Select Roll No", ["-- choose --"] + roll_options)
-
-            # optional debug display
-            debug = st.checkbox("Show debug info (headers & sample rows)", value=False)
 
             if selected_roll and selected_roll != "-- choose --":
                 roll_rows = df_plot[df_plot[roll_col].astype(str) == str(selected_roll)].copy()
@@ -460,13 +455,13 @@ else:
                     chosen_dates = st.multiselect(
                         "Select one or more Dates to plot (multiple lines)",
                         options=date_options,
-                        default=default_dates
+                        default=default_dates,
                     )
 
                     if not chosen_dates:
                         st.info("Select at least one date to plot.")
                     else:
-                        # build long-form rows
+                        # build long-form dataframe
                         rows = []
                         for _, r in roll_rows.iterrows():
                             label = r["_date_label"]
@@ -479,92 +474,9 @@ else:
                                         val = None
                                     else:
                                         val = float(str(raw).strip().replace(",", ""))
-                                except Exception:
-                                    val = None
-                                if val is not None:
-                                    rows.append({"DateLabel": label, "Distance": int(d), "Diameter": val})
-
-                        if not rows:
-                            st.warning("No numeric diameter data available for the selected dates.")
-                        else:
-                            plot_df = pd.DataFrame(rows).sort_values(["DateLabel", "Distance"])
-
-                            # === Clean, tight “profile” style chart ===
-                            min_dist = int(plot_df["Distance"].min())
-                            max_dist = int(plot_df["Distance"].max())
-                            y_min = float(plot_df["Diameter"].min())
-                            y_max = float(plot_df["Diameter"].max())
-
-                            # tight padding so small variation is visible (like your Excel image)
-                            y_pad = (y_max - y_min) * 0.05 if (y_max - y_min) > 0 else 0.2
-                            y_domain = [y_min - y_pad, y_max + y_pad]
-
-                            # distance ticks based on found columns (keeps original order)
-                            x_axis_values = [d for d, _ in found_distance_cols]
-
-                            chart = (
-                                alt.Chart(plot_df, title="Dirty Roll Profile")
-                                .mark_line(point=alt.OverlayMarkDef(filled=True, size=60), interpolate="monotone")
-                                .encode(
-                                    x=alt.X(
-                                        "Distance:Q",
-                                        title="Distance (mm)",
-                                        scale=alt.Scale(domain=[min_dist, max_dist]),
-                                        axis=alt.Axis(values=x_axis_values, labelFontSize=12, titleFontSize=12),
-                                    ),
-                                    y=alt.Y(
-                                        "Diameter:Q",
-                                        title="Diameter (mm)",
-                                        scale=alt.Scale(domain=y_domain),
-                                        axis=alt.Axis(labelFontSize=12, titleFontSize=12),
-                                    ),
-                                    color=alt.Color("DateLabel:N", title="Date", legend=alt.Legend(labelFontSize=11, titleFontSize=12)),
-                                    tooltip=[
-                                        alt.Tooltip("DateLabel", title="Date"),
-                                        alt.Tooltip("Distance", title="Distance (mm)"),
-                                        alt.Tooltip("Diameter", title="Diameter (mm)", format=".3f"),
-                                    ],
-                                )
-                                .properties(height=380)
-                                .configure_title(fontSize=16, anchor="middle")
-                            )
-
-                            # render chart
-                            st.altair_chart(chart, use_container_width=True)
-
-                            # show pivot/sample table
-                            pivot = plot_df.pivot_table(index="Distance", columns="DateLabel", values="Diameter")
-                            st.markdown("**Data plotted (sample):**")
-                            st.dataframe(pivot.reset_index(), use_container_width=True)
-
-                            # --- Download buttons (PNG, SVG if available, CSV) ---
-                            def export_chart_png(chart_obj, plot_df_local):
-                                # Try Altair saver first (best quality). If not available, fallback to Matplotlib.
-                                try:
-                                    from altair_saver import save as alt_save
-                                    buf = BytesIO()
-                                    alt_save(chart_obj, fp=buf, fmt="png", scale=2)
-                                    buf.seek(0)
-                                    return buf.getvalue()
-                                except Exception:
-                                    pass
-
-                                try:
-                                    fig, ax = plt.subplots(figsize=(9, 4.5))
-                                    for lbl, grp in plot_df_local.groupby("DateLabel"):
-                                        grp_sorted = grp.sort_values("Distance")
-                                        ax.plot(grp_sorted["Distance"], grp_sorted["Diameter"], marker="o", label=str(lbl))
-                                    ax.set_title("Dirty Roll Profile")
-                                    ax.set_xlabel("Distance (mm)")
-                                    ax.set_ylabel("Diameter (mm)")
-                                    ax.grid(True, alpha=0.3)
-                                    ax.legend(loc="best", fontsize=8)
-                                    buf = BytesIO()
-                                    fig.savefi
-
-
 
                           
+
 
 
 
