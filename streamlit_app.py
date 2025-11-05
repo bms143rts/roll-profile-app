@@ -376,104 +376,112 @@ with st.container():
                 use_container_width=True
             )
         st.markdown('</div>', unsafe_allow_html=True)
-# ---------- Plot section: select Roll ID and plot profile by date ----------
+# ---------- Robust Plot section: select Roll ID and plot profile by date ----------
 import altair as alt
-
-# Ensure distances list matches your sheet/order
-DISTANCES = [100, 350, 600, 850, 1100, 1350, 1600]
 
 st.markdown("## 📈 Plot Roll Profile")
 
-# Guard if df empty
 if df.empty:
     st.info("No data to plot.")
 else:
-    # Ensure Date column is datetime and Roll No exists
-    if "Date" in df.columns:
+    # --- helper: find column ignoring case ---
+    def find_col(df, candidates):
+        cols = {c.lower(): c for c in df.columns}
+        for cand in candidates:
+            if cand.lower() in cols:
+                return cols[cand.lower()]
+        return None
+
+    # try common names
+    date_col = find_col(df, ["Date", "date", "Entry Date", "entry_date"])
+    roll_col = find_col(df, ["Roll No", "RollNo", "roll_no", "roll no", "Roll", "roll"])
+
+    if date_col is None or roll_col is None:
+        st.error("Could not find required 'Date' or 'Roll No' columns in the sheet. Found columns: " + ", ".join(df.columns))
+    else:
+        # Normalize df copy
         df_plot = df.copy()
-        # Normalize column names (strip whitespace)
         df_plot.columns = [c.strip() for c in df_plot.columns]
 
-        # Ensure Date is a datetime (if it's a string)
+        # Ensure Date is string/datetime and produce a label
         try:
-            df_plot["Date"] = pd.to_datetime(df_plot["Date"])
+            df_plot[date_col] = pd.to_datetime(df_plot[date_col])
+            df_plot["_date_label"] = df_plot[date_col].dt.strftime("%Y-%m-%d")
         except Exception:
-            # if conversion fails, keep as string
-            pass
+            # fallback to string
+            df_plot["_date_label"] = df_plot[date_col].astype(str)
 
-        # Convert distance columns to numeric (if they're strings)
-        for d in DISTANCES:
-            col_name = str(d)
-            if col_name in df_plot.columns:
-                df_plot[col_name] = pd.to_numeric(df_plot[col_name], errors="coerce")
+        # Build map of distance column names present in the sheet.
+        # Accept columns named like "100", "100 mm", "100mm", "100 "
+        desired_distances = [100, 350, 600, 850, 1100, 1350, 1600]
+        found_distance_cols = []
+        for col in df_plot.columns:
+            col_clean = col.lower().replace("mm", "").replace(" ", "").replace("_", "")
+            for d in desired_distances:
+                if col_clean == str(d):
+                    found_distance_cols.append((d, col))
+                    break
 
-        # Select roll id
-        roll_options = sorted(df_plot["Roll No"].astype(str).unique())
-        selected_roll = st.selectbox("Select Roll No", ["-- choose --"] + roll_options)
+        if not found_distance_cols:
+            st.error("No distance columns (100,350,600...) detected. Sheet columns: " + ", ".join(df_plot.columns))
+        else:
+            # ensure order by distance
+            found_distance_cols = sorted(found_distance_cols, key=lambda x: desired_distances.index(x[0]))
 
-        if selected_roll and selected_roll != "-- choose --":
-            # Filter rows for the chosen roll
-            roll_rows = df_plot[df_plot["Roll No"].astype(str) == str(selected_roll)].copy()
+            # let user pick roll id
+            roll_options = sorted(df_plot[roll_col].astype(str).unique())
+            selected_roll = st.selectbox("Select Roll No", ["-- choose --"] + roll_options)
 
-            if roll_rows.empty:
-                st.warning("No rows found for that Roll No.")
-            else:
-                # Build a list of human-readable date labels (keep original format)
-                # Use the string form for selection, but keep datetime internally.
-                roll_rows["_date_str"] = roll_rows["Date"].dt.strftime("%Y-%m-%d") \
-                    if pd.api.types.is_datetime64_any_dtype(roll_rows["Date"]) else roll_rows["Date"].astype(str)
-
-                date_options = roll_rows["_date_str"].tolist()
-                # allow multi-select (user can compare multiple dates)
-                chosen_dates = st.multiselect("Select one or more Dates to plot (multiple lines)", options=date_options, default=[date_options[-1]])
-
-                if not chosen_dates:
-                    st.info("Select at least one date to plot.")
+            if selected_roll and selected_roll != "-- choose --":
+                roll_rows = df_plot[df_plot[roll_col].astype(str) == str(selected_roll)].copy()
+                if roll_rows.empty:
+                    st.warning("No rows for that Roll No.")
                 else:
-                    # Build long-form dataframe for Altair
-                    melt_rows = []
-                    for _, r in roll_rows.iterrows():
-                        date_label = r["_date_str"]
-                        if date_label not in chosen_dates:
-                            continue
-                        for d in DISTANCES:
-                            col = str(d)
-                            val = r.get(col, None)
-                            # handle NaNs, blanks
-                            try:
-                                v = float(val) if (val is not None and str(val).strip() != "") else None
-                            except Exception:
-                                v = None
-                            melt_rows.append({
-                                "DateLabel": date_label,
-                                "Distance": int(d),
-                                "Diameter": v
-                            })
+                    # list of date labels for this roll
+                    date_options = roll_rows["_date_label"].tolist()
+                    # default to most recent (last)
+                    default_dates = [date_options[-1]] if date_options else []
+                    chosen_dates = st.multiselect("Select one or more Dates to plot (multiple lines)", options=date_options, default=default_dates)
 
-                    if not melt_rows:
-                        st.warning("No numeric diameter values found for the selected dates.")
+                    if not chosen_dates:
+                        st.info("Select at least one date to plot.")
                     else:
-                        long_df = pd.DataFrame(melt_rows)
+                        # build long dataframe
+                        rows = []
+                        for _, r in roll_rows.iterrows():
+                            label = r["_date_label"]
+                            if label not in chosen_dates:
+                                continue
+                            for d, colname in found_distance_cols:
+                                raw = r.get(colname, None)
+                                try:
+                                    val = float(raw) if (raw is not None and str(raw).strip() != "") else None
+                                except Exception:
+                                    val = None
+                                if val is not None:
+                                    rows.append({"DateLabel": label, "Distance": int(d), "Diameter": val})
 
-                        # optionally sort distances (ensures lines draw in order)
-                        long_df = long_df.sort_values(["DateLabel", "Distance"])
+                        if not rows:
+                            st.warning("No numeric diameter data available for the selected dates.")
+                        else:
+                            plot_df = pd.DataFrame(rows).sort_values(["DateLabel", "Distance"])
 
-                        # Altair chart: line + points, legend by DateLabel
-                        base = alt.Chart(long_df).encode(
-                            x=alt.X("Distance:Q", title="Distance (mm)", scale=alt.Scale(domain=[min(DISTANCES), max(DISTANCES)])),
-                            y=alt.Y("Diameter:Q", title="Diameter (mm)"),
-                            color=alt.Color("DateLabel:N", title="Date"),
-                            tooltip=["DateLabel", "Distance", alt.Tooltip("Diameter", format=".2f")]
-                        )
+                            # Altair chart
+                            base = alt.Chart(plot_df).encode(
+                                x=alt.X("Distance:Q", title="Distance (mm)"),
+                                y=alt.Y("Diameter:Q", title="Diameter (mm)"),
+                                color=alt.Color("DateLabel:N", title="Date"),
+                                tooltip=["DateLabel", "Distance", alt.Tooltip("Diameter", format=".2f")]
+                            )
 
-                        line = base.mark_line(point=True).interactive()
-                        st.altair_chart(line, use_container_width=True)
+                            chart = base.mark_line(point=True).interactive().properties(height=420)
+                            st.altair_chart(chart, use_container_width=True)
 
-                        # Show a small table summary below the chart
-                        st.markdown("**Data plotted (sample):**")
-                        st.dataframe(long_df.pivot_table(index="Distance", columns="DateLabel", values="Diameter"), use_container_width=True)
+                            # sample table (pivot)
+                            pivot = plot_df.pivot_table(index="Distance", columns="DateLabel", values="Diameter")
+                            st.markdown("**Data plotted (sample):**")
+                            st.dataframe(pivot.reset_index(), use_container_width=True)
 
 
-    st.markdown('</div>', unsafe_allow_html=True)
 
 
