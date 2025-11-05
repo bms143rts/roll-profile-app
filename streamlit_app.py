@@ -488,8 +488,8 @@ else:
                             if y_mode.startswith("Data"):
                                 y_min = float(plot_df["Diameter"].min())
                                 y_max = float(plot_df["Diameter"].max())
-                                y_padding = max(1.0, (y_max - y_min) * 0.02)
-                                y_domain = [max(MIN_DIA, y_min - y_padding), min(MAX_DIA, y_max + y_padding)]
+                                y_padding = (y_max - y_min) * 0.05
+                                y_domain =[ y_min - y_padding, y_max + y_padding]
                             else:
                                 margin = (MAX_DIA - MIN_DIA) * 0.03
                                 y_domain = [MIN_DIA - margin, MAX_DIA + margin]
@@ -520,6 +520,7 @@ else:
                             st.dataframe(pivot.reset_index(), use_container_width=True)
 
                           
+
 
 
 
