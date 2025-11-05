@@ -585,8 +585,8 @@ else:
                             # --- download buttons ---
                             st.markdown("#### ⬇️ Download")
                             c1 = st.columns(1)
-                            with c1:
-                                if png_bytes:
+                            
+                            if png_bytes:
                                     st.download_button(
                                         "Download PNG",
                                         data=png_bytes,
@@ -603,6 +603,7 @@ else:
 
 
                           
+
 
 
 
