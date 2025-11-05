@@ -599,8 +599,8 @@ except Exception as e:
 
                             # pivot table
 
-st.markdown("#### ⬇️ Download")
-                            c1= st.columns(1)
+                                  st.markdown("#### ⬇️ Download")
+                                   c1= st.column(1)
                                     st.download_button(
                                         "Download PNG",
                                         data=png_bytes,
@@ -612,6 +612,7 @@ st.markdown("#### ⬇️ Download")
    
 
                           
+
 
 
 
