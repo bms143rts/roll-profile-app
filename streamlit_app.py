@@ -5,6 +5,7 @@ from docx import Document
 from datetime import date as dt_date
 import gspread
 from google.oauth2.service_account import Credentials
+import plotly.graph_objects as go
 
 # Hide Streamlit UI elements
 hide_streamlit_ui = """
@@ -226,7 +227,7 @@ MAX_DIA = 1352.0
 st.markdown("""
     <div class="main-header">
         <h1>📊 Backup Roll Profile Data Entry</h1>
-        <p>Manage and track roll with ease</p>
+        <p>Manage and track roll specifications with ease</p>
     </div>
 """, unsafe_allow_html=True)
 
@@ -246,15 +247,15 @@ with st.container():
         with col2:
             roll_no = st.text_input("🏷️ Roll No (required)").strip().upper()
         with col3:
-            stand = st.selectbox("Stand", ['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'ROUGHING', 'DC'])
+            stand = st.selectbox("🏭 Stand", ['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'ROUGHING', 'DC'])
 
         col1, col2 = st.columns(2)
         with col1:
             position = st.selectbox("📍 Position", ['TOP', 'BOTTOM'])
         with col2:
-            crown = st.selectbox("Crown", ['STRAIGHT', '+100µ', '+200μ'])
+            crown = st.selectbox("👑 Crown", ['STRAIGHT', '+100 MICRON', '+200 MICRON'])
 
-        st.markdown('<p class="diameter-label">📏 Diameters (mm) — must be between 1250 and 1352</p>', unsafe_allow_html=True)
+        st.markdown('<p class="diameter-label">📏 Diameters (mm) — must be between 1245 and 1352</p>', unsafe_allow_html=True)
         
         # Single column for diameter inputs
         diameters = {}
@@ -268,6 +269,106 @@ with st.container():
         submitted = st.form_submit_button("💾 Save Entry", use_container_width=True)
 
     st.markdown('</div>', unsafe_allow_html=True)
+
+# --- Chart Visualization Section ---
+if not df.empty:
+    with st.container():
+        st.markdown('<div class="data-section">', unsafe_allow_html=True)
+        st.markdown("### 📈 Roll Profile Visualization")
+        
+        # Roll selection for chart
+        roll_options = df['Roll No'].unique().tolist()
+        selected_roll = st.selectbox("Select Roll No to visualize:", roll_options)
+        
+        if selected_roll:
+            roll_data = df[df['Roll No'] == selected_roll].iloc[0]
+            
+            # Extract diameter values
+            positions = []
+            diameters = []
+            for dist in DISTANCES:
+                col_name = str(dist)
+                if col_name in roll_data and roll_data[col_name] != "" and roll_data[col_name] != "0.00":
+                    positions.append(dist)
+                    diameters.append(float(roll_data[col_name].replace(',', '')))
+            
+            if positions and diameters:
+                # Create plotly chart
+                fig = go.Figure()
+                
+                # Add measured diameter line
+                fig.add_trace(go.Scatter(
+                    x=positions,
+                    y=diameters,
+                    mode='lines+markers',
+                    name='Measured Diameter',
+                    line=dict(color='#ff7f0e', width=2),
+                    marker=dict(size=8, color='#ff7f0e'),
+                    text=[f'{d:.2f}' for d in diameters],
+                    textposition='top center',
+                    textfont=dict(size=10)
+                ))
+                
+                # Add ideal profile line (straight line at average)
+                avg_dia = sum(diameters) / len(diameters)
+                fig.add_trace(go.Scatter(
+                    x=positions,
+                    y=[avg_dia] * len(positions),
+                    mode='lines',
+                    name='Ideal Profile',
+                    line=dict(color='#1f77b4', width=2, dash='dash')
+                ))
+                
+                # Update layout
+                fig.update_layout(
+                    title=f'{selected_roll}',
+                    xaxis_title='Position (mm)',
+                    yaxis_title='Diameter (mm)',
+                    hovermode='x unified',
+                    height=500,
+                    plot_bgcolor='white',
+                    paper_bgcolor='white',
+                    font=dict(size=12),
+                    showlegend=True,
+                    legend=dict(
+                        orientation="h",
+                        yanchor="bottom",
+                        y=1.02,
+                        xanchor="right",
+                        x=1
+                    )
+                )
+                
+                # Update axes
+                fig.update_xaxis(
+                    showgrid=True,
+                    gridwidth=1,
+                    gridcolor='lightgray',
+                    zeroline=False
+                )
+                fig.update_yaxis(
+                    showgrid=True,
+                    gridwidth=1,
+                    gridcolor='lightgray',
+                    zeroline=False
+                )
+                
+                st.plotly_chart(fig, use_container_width=True)
+                
+                # Display roll information
+                col1, col2, col3, col4 = st.columns(4)
+                with col1:
+                    st.metric("Date", roll_data.get('Date', 'N/A'))
+                with col2:
+                    st.metric("Stand", roll_data.get('stand', 'N/A'))
+                with col3:
+                    st.metric("Position", roll_data.get('position', 'N/A'))
+                with col4:
+                    st.metric("Crown", roll_data.get('crown', 'N/A'))
+            else:
+                st.warning("⚠️ No diameter data available for this roll.")
+        
+        st.markdown('</div>', unsafe_allow_html=True)
 
 # --- Save Entry ---
 if submitted:
@@ -375,4 +476,3 @@ with st.container():
         st.markdown('</div>', unsafe_allow_html=True)
 
     st.markdown('</div>', unsafe_allow_html=True)
-
