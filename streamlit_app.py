@@ -303,19 +303,22 @@ if not df.empty:
                 # Create chart data
                 chart_df = pd.DataFrame({
                     'Position (mm)': positions,
-                    'Measured Diameter (mm)': diameters
+                    'Diameter (mm)': diameters
                 })
                 
-                # Add ideal profile (average)
-                avg_dia = sum(diameters) / len(diameters)
-                chart_df['Ideal Profile (mm)'] = avg_dia
-                
-                # Display line chart
+                # Display line chart with proper styling
                 st.line_chart(
                     chart_df.set_index('Position (mm)'),
-                    height=500,
-                    use_container_width=True
+                    height=400,
+                    use_container_width=True,
+                    color='#1f77b4'
                 )
+                
+                # Display data table below chart
+                st.markdown("##### 📊 Profile Data")
+                display_chart_df = chart_df.copy()
+                display_chart_df.columns = ['Position', 'Diameter']
+                st.dataframe(display_chart_df, use_container_width=True, hide_index=True)
                 
                 # Display roll information
                 col1, col2, col3, col4 = st.columns(4)
