@@ -600,73 +600,10 @@ except Exception as e:
                             # pivot table
 
 
-                            # --- download helpers ---
-                            def export_chart_png(chart_obj, plot_df_local):
-                                # Try Altair saver, fallback to Matplotlib
-                                try:
-                                    from altair_saver import save as alt_save
-                                    buf = BytesIO()
-                                    alt_save(chart_obj, fp=buf, fmt="png", scale=2)
-                                    buf.seek(0)
-                                    return buf.getvalue()
-                                except Exception:
-                                    try:
-                                        fig, ax = plt.subplots(figsize=(9, 4.5))
-                                        for lbl, grp in plot_df_local.groupby("DateLabel"):
-                                            grp_sorted = grp.sort_values("Distance")
-                                            ax.plot(
-                                                grp_sorted["Distance"],
-                                                grp_sorted["Diameter"],
-                                                marker="o",
-                                                label=str(lbl),
-                                            )
-                                        ax.set_title("Dirty Roll Profile")
-                                        ax.set_xlabel("Distance (mm)")
-                                        ax.set_ylabel("Diameter (mm)")
-                                        ax.grid(True, alpha=0.3)
-                                        ax.legend(loc="best", fontsize=8)
-                                        buf = BytesIO()
-                                        fig.savefig(
-                                            buf, format="png", dpi=220, bbox_inches="tight"
-                                        )
-                                        plt.close(fig)
-                                        buf.seek(0)
-                                        return buf.getvalue()
-                                    except Exception as e:
-                                        st.error(f"PNG export failed: {e}")
-                                        return None
-
-                            def export_chart_svg(chart_obj):
-                                try:
-                                    from altair_saver import save as alt_save
-                                    buf = BytesIO()
-                                    alt_save(chart_obj, fp=buf, fmt="svg")
-                                    buf.seek(0)
-                                    return buf.getvalue()
-                                except Exception:
-                                    return None
-
-                            png_bytes = export_chart_png(chart, plot_df)
-                            svg_bytes = export_chart_svg(chart)
-                            csv_bytes = plot_df.to_csv(index=False).encode("utf-8")
-
-                            # --- download buttons ---
-                            st.markdown("#### ⬇️ Download Profile ")
-                            c1 = st.columns(1)
-                            st.download_button(
-                                       "Download PNG",
-                                        data=png_bytes,
-                                        file_name=f"roll_profile_{selected_roll}.png",
-                                        mime="image/png",
-                                        use_container_width=True,
-                                    )
-                             
-
-            else:
-                st.info("Please choose a Roll No to plot.")
-
+   
 
                           
+
 
 
 
