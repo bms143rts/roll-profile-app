@@ -520,19 +520,71 @@ def _export_chart_png(chart_obj, plot_df_local):
     Returns PNG bytes.
     """
     # 1) Prefer Altair direct export (requires altair_saver + vl-convert)
+  # === Clean, tight “profile” style chart ===
+min_dist = int(plot_df["Distance"].min())
+max_dist = int(plot_df["Distance"].max())
+y_min = float(plot_df["Diameter"].min())
+y_max = float(plot_df["Diameter"].max())
+
+# small Y padding (5%)
+y_pad = (y_max - y_min) * 0.05 if (y_max - y_min) > 0 else 0.2
+y_domain = [y_min - y_pad, y_max + y_pad]
+
+# distance ticks
+x_axis_values = [100, 350, 600, 850, 1100, 1350, 1600]
+
+# build Altair chart
+chart = (
+    alt.Chart(plot_df, title="Dirty Roll Profile")
+    .mark_line(point=alt.OverlayMarkDef(filled=True, size=60))
+    .encode(
+        x=alt.X(
+            "Distance:Q",
+            title="Distance (mm)",
+            scale=alt.Scale(domain=[min_dist, max_dist]),
+            axis=alt.Axis(values=x_axis_values, labelFontSize=13, titleFontSize=13),
+        ),
+        y=alt.Y(
+            "Diameter:Q",
+            title="Diameter (mm)",
+            scale=alt.Scale(domain=y_domain),
+            axis=alt.Axis(labelFontSize=13, titleFontSize=13),
+        ),
+        color=alt.Color("DateLabel:N", title="Date", legend=alt.Legend(labelFontSize=12, titleFontSize=12)),
+        tooltip=[
+            alt.Tooltip("DateLabel", title="Date"),
+            alt.Tooltip("Distance", title="Distance (mm)"),
+            alt.Tooltip("Diameter", title="Diameter (mm)", format=".3f"),
+        ],
+    )
+    .properties(height=380)
+    .configure_title(fontSize=18, anchor="middle")
+)
+
+# show chart
+st.altair_chart(chart, use_container_width=True)
+
+# --- show pivot table below the chart ---
+pivot = plot_df.pivot_table(index="Distance", columns="DateLabel", values="Diameter")
+st.markdown("**Data plotted (sample):**")
+st.dataframe(pivot.reset_index(), use_container_width=True)
+
+# --- Download buttons section ---
+from io import BytesIO
+import matplotlib.pyplot as plt
+
+def export_chart_png(chart_obj, plot_df_local):
+    """Try Altair -> PNG, else fallback to Matplotlib."""
     try:
         from altair_saver import save as alt_save
         buf = BytesIO()
-        # scale=2 for a crisp image
         alt_save(chart_obj, fp=buf, fmt="png", scale=2)
         buf.seek(0)
         return buf.getvalue()
     except Exception:
         pass
 
-    # 2) Fallback: re-plot with Matplotlib and save as PNG
     try:
-        import matplotlib.pyplot as plt
         fig, ax = plt.subplots(figsize=(9, 4.5))
         for lbl, grp in plot_df_local.groupby("DateLabel"):
             grp_sorted = grp.sort_values("Distance")
@@ -551,10 +603,8 @@ def _export_chart_png(chart_obj, plot_df_local):
         st.error(f"Could not export PNG: {e}")
         return None
 
-def _export_chart_svg(chart_obj):
-    """
-    Try exporting Altair chart as SVG (vector). Returns SVG bytes or None.
-    """
+def export_chart_svg(chart_obj):
+    """Try to export Altair chart as SVG vector."""
     try:
         from altair_saver import save as alt_save
         buf = BytesIO()
@@ -564,14 +614,15 @@ def _export_chart_svg(chart_obj):
     except Exception:
         return None
 
-# Build bytes for downloads
-png_bytes = _export_chart_png(chart, plot_df)
-svg_bytes = _export_chart_svg(chart)  # might be None if backend not available
+# prepare data for download
+png_bytes = export_chart_png(chart, plot_df)
+svg_bytes = export_chart_svg(chart)
 csv_bytes = plot_df.to_csv(index=False).encode("utf-8")
 
-# Show buttons
+# buttons row
 st.markdown("#### ⬇️ Download")
 c1, c2, c3 = st.columns(3)
+
 with c1:
     if png_bytes:
         st.download_button(
@@ -579,10 +630,11 @@ with c1:
             data=png_bytes,
             file_name=f"roll_profile_{selected_roll}.png",
             mime="image/png",
-            use_container_width=True
+            use_container_width=True,
         )
     else:
-        st.info("PNG export not available on this runtime.")
+        st.info("PNG export not available.")
+
 with c2:
     if svg_bytes:
         st.download_button(
@@ -590,26 +642,23 @@ with c2:
             data=svg_bytes,
             file_name=f"roll_profile_{selected_roll}.svg",
             mime="image/svg+xml",
-            use_container_width=True
+            use_container_width=True,
         )
     else:
         st.caption("SVG export requires `altair_saver` + `vl-convert`.")
+
 with c3:
     st.download_button(
         "Download CSV (data)",
         data=csv_bytes,
         file_name=f"roll_profile_{selected_roll}.csv",
         mime="text/csv",
-        use_container_width=True
+        use_container_width=True,
     )
 
 
-                            # show pivot/sample table
-                            pivot = plot_df.pivot_table(index="Distance", columns="DateLabel", values="Diameter")
-                            st.markdown("**Data plotted (sample):**")
-                            st.dataframe(pivot.reset_index(), use_container_width=True)
-
                           
+
 
 
 
