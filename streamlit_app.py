@@ -287,9 +287,17 @@ if not df.empty:
             diameters = []
             for dist in DISTANCES:
                 col_name = str(dist)
-                if col_name in roll_data and roll_data[col_name] != "" and roll_data[col_name] != "0.00":
-                    positions.append(dist)
-                    diameters.append(float(roll_data[col_name].replace(',', '')))
+                if col_name in roll_data:
+                    val = roll_data[col_name]
+                    # Convert to string and check if it has a value
+                    val_str = str(val).strip()
+                    if val_str != "" and val_str != "0.00" and val_str != "0" and val_str.lower() != "nan":
+                        try:
+                            # Remove commas and convert to float
+                            positions.append(dist)
+                            diameters.append(float(val_str.replace(',', '')))
+                        except (ValueError, AttributeError):
+                            continue
             
             if positions and diameters:
                 # Create chart data
