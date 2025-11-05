@@ -599,10 +599,20 @@ except Exception as e:
 
                             # pivot table
 
-
+st.markdown("#### ⬇️ Download")
+                            c1= st.columns(1)
+                                    st.download_button(
+                                        "Download PNG",
+                                        data=png_bytes,
+                                        file_name=f"roll_profile_{selected_roll}.png",
+                                        mime="image/png",
+                                        use_container_width=True,
+                                    )
+                    
    
 
                           
+
 
 
 
