@@ -524,36 +524,28 @@ else:
                             )
 
                             st.altair_chart(chart, use_container_width=True)
-
-                            # pivot table
-                           # ---------------------
-# Custom merged-header HTML table (Roll ID in first merged row; no dates)
-# ---------------------
-
+                            # ---------- Display neatly formatted roll data (no Date column, Roll ID header) ----------
 def render_merged_roll_table(plot_df_local, selected_roll):
     """
     Renders an HTML table where the first row is a merged header showing Roll ID,
     and below are columns: Distance + Diameter #1, Diameter #2, ...
-    plot_df_local: long-form DataFrame with columns ["DateLabel","Distance","Diameter"]
     """
-    # determine unique ordered distances and ordered dates (by DateLabel order found)
+    import html
+
+    # Get ordered unique distances and dates
     distances = sorted(plot_df_local["Distance"].unique())
-    date_labels = list(plot_df_local["DateLabel"].unique())  # order preserved
-    
-    # Build header labels for diameter columns WITHOUT showing dates
+    date_labels = list(plot_df_local["DateLabel"].unique())  # preserves order
     dia_headers = [f"Diameter #{i+1}" for i in range(len(date_labels))]
-    
-    # Map: (distance -> list of diameters ordered by date_labels)
-    # initialize mapping with None
+
+    # Map distance -> list of diameters per date
     data_map = {d: ["" for _ in date_labels] for d in distances}
-    # fill map
     for i, dl in enumerate(date_labels):
-        sub = plot_df_local[plot_df_local["DateLabel"] == dl]
-        for _, r in sub.iterrows():
-            dist = int(r["Distance"])
-            data_map[dist][i] = f"{float(r['Diameter']):.3f}"
-    
-    # build HTML
+        subset = plot_df_local[plot_df_local["DateLabel"] == dl]
+        for _, row in subset.iterrows():
+            dist = int(row["Distance"])
+            data_map[dist][i] = f"{float(row['Diameter']):.3f}"
+
+    # Table CSS styling
     table_css = """
     <style>
     .rp-table {border-collapse: collapse; width: 100%; font-family: Arial, Helvetica, sans-serif;}
@@ -564,48 +556,48 @@ def render_merged_roll_table(plot_df_local, selected_roll):
     .rp-table tbody td {font-size: 0.95rem;}
     </style>
     """
-    # first header row: merged across all columns
-    total_cols = 1 + len(dia_headers)  # Distance + diameter columns
-    header_row = f'<tr><th class="rp-roll-header" colspan="{total_cols}">Roll: {selected_roll}</th></tr>'
-    
-    # second header row: column titles
-    second_head_cells = "<th>Distance</th>" + "".join(f"<th>{h}</th>" for h in dia_headers)
-    second_row = f"<tr>{second_head_cells}</tr>"
-    
-    # body rows
-    body_rows = ""
+
+    # First header: merged Roll ID
+    total_cols = 1 + len(dia_headers)
+    header_row = f'<tr><th class="rp-roll-header" colspan="{total_cols}">Roll: {html.escape(selected_roll)}</th></tr>'
+
+    # Second header: Distance + Diameter headers
+    second_head = "<th>Distance (mm)</th>" + "".join(f"<th>{h}</th>" for h in dia_headers)
+    second_row = f"<tr>{second_head}</tr>"
+
+    # Body rows
+    body_html = ""
     for d in distances:
-        cells = f"<td>{d}</td>"
-        for val in data_map.get(d, []):
-            cells += f"<td>{val}</td>"
-        body_rows += f"<tr>{cells}</tr>"
-    
-    html = f"""
+        row_cells = f"<td>{d}</td>" + "".join(f"<td>{v}</td>" for v in data_map[d])
+        body_html += f"<tr>{row_cells}</tr>"
+
+    # Assemble HTML
+    html_table = f"""
     {table_css}
     <table class="rp-table">
-      <thead>
-        {header_row}
-        {second_row}
-      </thead>
-      <tbody>
-        {body_rows}
-      </tbody>
+        <thead>
+            {header_row}
+            {second_row}
+        </thead>
+        <tbody>
+            {body_html}
+        </tbody>
     </table>
     """
-    return html
+    return html_table
 
-# Use it (replace the pivot display)
+
+# --- render the HTML table safely ---
 st.markdown("**Data plotted (sample):**")
 try:
-    # plot_df is the long-form dataframe created earlier
     html_table = render_merged_roll_table(plot_df, selected_roll)
     st.markdown(html_table, unsafe_allow_html=True)
 except Exception as e:
-    # fallback to simple dataframe if something goes wrong
-    st.error("Could not render custom table, showing fallback table.")
-    display_df = plot_df[["DateLabel", "Distance", "Diameter"]].sort_values(["DateLabel", "Distance"])
-    st.dataframe(display_df, use_container_width=True)
+    st.error(f"Could not render formatted table: {e}")
+    st.dataframe(plot_df, use_container_width=True)
 
+
+                            # pivot table
 
 
                             # --- download helpers ---
@@ -675,6 +667,7 @@ except Exception as e:
 
 
                           
+
 
 
 
