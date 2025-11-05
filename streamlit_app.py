@@ -235,6 +235,7 @@ existing_data = sheet.get_all_records()
 df = pd.DataFrame(existing_data)
 
 # --- Entry Form ---
+diameters = {}
 with st.container():
     st.markdown('<div class="form-section">', unsafe_allow_html=True)
     with st.form("entry_form", clear_on_submit=False):
