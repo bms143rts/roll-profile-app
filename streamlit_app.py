@@ -436,8 +436,7 @@ else:
             roll_options = sorted(df_plot[roll_col].astype(str).unique())
             selected_roll = st.selectbox("Select Roll No", ["-- choose --"] + roll_options)
 
-            # Debug toggle to display column info and types
-            debug = st.checkbox("Show debug info (headers & sample rows)", value=False)
+         
 
             if selected_roll and selected_roll != "-- choose --":
                 roll_rows = df_plot[df_plot[roll_col].astype(str) == str(selected_roll)].copy()
@@ -531,6 +530,7 @@ else:
                                 st.write(plot_df.dtypes.to_dict())
                                 st.write("Sample rows:")
                                 st.write(plot_df.head().to_dict("records"))
+
 
 
 
