@@ -287,8 +287,14 @@ if not df.empty:
             positions = []
             diameters = []
             for dist in DISTANCES:
-                col_name = str(dist)
-                if col_name in roll_data:
+                # Try both string and integer column names
+                col_name = None
+                if str(dist) in roll_data:
+                    col_name = str(dist)
+                elif dist in roll_data:
+                    col_name = dist
+                
+                if col_name is not None:
                     val = roll_data[col_name]
                     # Convert to string and check if it has a value
                     val_str = str(val).strip()
