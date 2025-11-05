@@ -376,7 +376,6 @@ with st.container():
                 use_container_width=True
             )
         st.markdown('</div>', unsafe_allow_html=True)
-# ---------- Robust Plot section: select Roll ID and plot profile by date ---------
 # ---------- Robust Plot section: select Roll ID and plot profile by date ----------
 import altair as alt
 import re
@@ -474,8 +473,155 @@ else:
                                         val = None
                                     else:
                                         val = float(str(raw).strip().replace(",", ""))
+                                except Exception:
+                                    val = None
+                                if val is not None:
+                                    rows.append(
+                                        {"DateLabel": label, "Distance": int(d), "Diameter": val}
+                                    )
+
+                        if not rows:
+                            st.warning("No numeric data available for selected dates.")
+                        else:
+                            plot_df = pd.DataFrame(rows).sort_values(["DateLabel", "Distance"])
+
+                            # --- chart settings ---
+                            min_dist = int(plot_df["Distance"].min())
+                            max_dist = int(plot_df["Distance"].max())
+                            y_min = float(plot_df["Diameter"].min())
+                            y_max = float(plot_df["Diameter"].max())
+                            y_pad = (y_max - y_min) * 0.05 if (y_max - y_min) > 0 else 0.2
+                            y_domain = [y_min - y_pad, y_max + y_pad]
+                            x_axis_values = [d for d, _ in found_distance_cols]
+
+                            # Altair chart
+                            chart = (
+                                alt.Chart(plot_df, title="Dirty Roll Profile")
+                                .mark_line(
+                                    point=alt.OverlayMarkDef(filled=True, size=60),
+                                    interpolate="monotone",
+                                )
+                                .encode(
+                                    x=alt.X(
+                                        "Distance:Q",
+                                        title="Distance (mm)",
+                                        scale=alt.Scale(domain=[min_dist, max_dist]),
+                                        axis=alt.Axis(values=x_axis_values),
+                                    ),
+                                    y=alt.Y(
+                                        "Diameter:Q",
+                                        title="Diameter (mm)",
+                                        scale=alt.Scale(domain=y_domain),
+                                    ),
+                                    color=alt.Color("DateLabel:N", title="Date"),
+                                    tooltip=[
+                                        alt.Tooltip("DateLabel", title="Date"),
+                                        alt.Tooltip("Distance", title="Distance (mm)"),
+                                        alt.Tooltip("Diameter", title="Diameter (mm)", format=".3f"),
+                                    ],
+                                )
+                                .properties(height=380)
+                            )
+
+                            st.altair_chart(chart, use_container_width=True)
+
+                            # pivot table
+                            pivot = plot_df.pivot_table(
+                                index="Distance", columns="DateLabel", values="Diameter"
+                            )
+                            st.markdown("**Data plotted (sample):**")
+                            st.dataframe(pivot.reset_index(), use_container_width=True)
+
+                            # --- download helpers ---
+                            def export_chart_png(chart_obj, plot_df_local):
+                                # Try Altair saver, fallback to Matplotlib
+                                try:
+                                    from altair_saver import save as alt_save
+                                    buf = BytesIO()
+                                    alt_save(chart_obj, fp=buf, fmt="png", scale=2)
+                                    buf.seek(0)
+                                    return buf.getvalue()
+                                except Exception:
+                                    try:
+                                        fig, ax = plt.subplots(figsize=(9, 4.5))
+                                        for lbl, grp in plot_df_local.groupby("DateLabel"):
+                                            grp_sorted = grp.sort_values("Distance")
+                                            ax.plot(
+                                                grp_sorted["Distance"],
+                                                grp_sorted["Diameter"],
+                                                marker="o",
+                                                label=str(lbl),
+                                            )
+                                        ax.set_title("Dirty Roll Profile")
+                                        ax.set_xlabel("Distance (mm)")
+                                        ax.set_ylabel("Diameter (mm)")
+                                        ax.grid(True, alpha=0.3)
+                                        ax.legend(loc="best", fontsize=8)
+                                        buf = BytesIO()
+                                        fig.savefig(
+                                            buf, format="png", dpi=220, bbox_inches="tight"
+                                        )
+                                        plt.close(fig)
+                                        buf.seek(0)
+                                        return buf.getvalue()
+                                    except Exception as e:
+                                        st.error(f"PNG export failed: {e}")
+                                        return None
+
+                            def export_chart_svg(chart_obj):
+                                try:
+                                    from altair_saver import save as alt_save
+                                    buf = BytesIO()
+                                    alt_save(chart_obj, fp=buf, fmt="svg")
+                                    buf.seek(0)
+                                    return buf.getvalue()
+                                except Exception:
+                                    return None
+
+                            png_bytes = export_chart_png(chart, plot_df)
+                            svg_bytes = export_chart_svg(chart)
+                            csv_bytes = plot_df.to_csv(index=False).encode("utf-8")
+
+                            # --- download buttons ---
+                            st.markdown("#### ⬇️ Download")
+                            c1, c2, c3 = st.columns(3)
+                            with c1:
+                                if png_bytes:
+                                    st.download_button(
+                                        "Download PNG",
+                                        data=png_bytes,
+                                        file_name=f"roll_profile_{selected_roll}.png",
+                                        mime="image/png",
+                                        use_container_width=True,
+                                    )
+                                else:
+                                    st.info("PNG export not available.")
+                            with c2:
+                                if svg_bytes:
+                                    st.download_button(
+                                        "Download SVG",
+                                        data=svg_bytes,
+                                        file_name=f"roll_profile_{selected_roll}.svg",
+                                        mime="image/svg+xml",
+                                        use_container_width=True,
+                                    )
+                                else:
+                                    st.caption("SVG export requires `altair_saver`.")
+                            with c3:
+                                st.download_button(
+                                    "Download CSV",
+                                    data=csv_bytes,
+                                    file_name=f"roll_profile_{selected_roll}.csv",
+                                    mime="text/csv",
+                                    use_container_width=True,
+                                )
+
+            else:
+                st.info("Please choose a Roll No to plot.")
+
 
                           
+
 
 
 
