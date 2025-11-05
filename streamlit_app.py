@@ -481,6 +481,9 @@ else:
                             pivot = plot_df.pivot_table(index="Distance", columns="DateLabel", values="Diameter")
                             st.markdown("**Data plotted (sample):**")
                             st.dataframe(pivot.reset_index(), use_container_width=True)
+st.write("Columns:", list(df.columns))
+st.write(df.head(5).to_dict("records"))
+
 
 
 
