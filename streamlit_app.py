@@ -376,16 +376,27 @@ with st.container():
                 use_container_width=True
             )
         st.markdown('</div>', unsafe_allow_html=True)
+# ---------- Robust Plot section: select Roll ID and plot profile by date ---------
 # ---------- Robust Plot section: select Roll ID and plot profile by date ----------
 import altair as alt
 import re
+from io import BytesIO
+import matplotlib.pyplot as plt
 
 st.markdown("## 📈 Plot Roll Profile")
+
+# If your main app defines MIN_DIA / MAX_DIA above, this will use them.
+# If not, set sensible defaults here:
+try:
+    MIN_DIA  # noqa: F821
+except NameError:
+    MIN_DIA = 1245.0
+    MAX_DIA = 1352.0
 
 if df.empty:
     st.info("No data to plot.")
 else:
-    # ---- utils ----
+    # ---- helpers ----
     def find_col_by_candidates(col_list, candidates):
         cols_map = {c.strip().lower(): c for c in col_list}
         for cand in candidates:
@@ -394,26 +405,26 @@ else:
                 return cols_map[cand_norm]
         return None
 
-    # make a safe working copy (strip headers)
+    # safe working copy (strip headers)
     df_plot = df.copy()
     df_plot.rename(columns={c: c.strip() for c in df_plot.columns}, inplace=True)
     norm_cols = list(df_plot.columns)
 
-    # find date & roll columns (case-insensitive, common variants)
+    # find Date and Roll columns (common variants)
     date_col = find_col_by_candidates(norm_cols, ["date", "entry date", "entry_date", "Date"])
     roll_col = find_col_by_candidates(norm_cols, ["roll no", "rollno", "roll_no", "roll", "Roll No", "Roll"])
 
     if date_col is None or roll_col is None:
         st.error("Could not find required 'Date' or 'Roll No' columns. Found columns: " + ", ".join(norm_cols))
     else:
-        # ensure date label
+        # Normalize date -> string label
         try:
             df_plot[date_col] = pd.to_datetime(df_plot[date_col])
             df_plot["_date_label"] = df_plot[date_col].dt.strftime("%Y-%m-%d")
         except Exception:
             df_plot["_date_label"] = df_plot[date_col].astype(str)
 
-        # detect distance columns by extracting first integer in header
+        # Detect distance columns by extracting the first integer in header
         desired_distances = [100, 350, 600, 850, 1100, 1350, 1600]
         found_distance_cols = []
         for col in norm_cols:
@@ -432,11 +443,12 @@ else:
         if not found_distance_cols:
             st.error("No distance columns (100,350,600,...) detected. Sheet columns: " + ", ".join(norm_cols))
         else:
-            # choose Roll No
+            # Roll selection
             roll_options = sorted(df_plot[roll_col].astype(str).unique())
             selected_roll = st.selectbox("Select Roll No", ["-- choose --"] + roll_options)
 
-         
+            # optional debug display
+            debug = st.checkbox("Show debug info (headers & sample rows)", value=False)
 
             if selected_roll and selected_roll != "-- choose --":
                 roll_rows = df_plot[df_plot[roll_col].astype(str) == str(selected_roll)].copy()
@@ -454,7 +466,7 @@ else:
                     if not chosen_dates:
                         st.info("Select at least one date to plot.")
                     else:
-                        # build long-form data for plotting
+                        # build long-form rows
                         rows = []
                         for _, r in roll_rows.iterrows():
                             label = r["_date_label"]
@@ -466,7 +478,6 @@ else:
                                     if raw is None or str(raw).strip() == "":
                                         val = None
                                     else:
-                                        # strip commas and whitespace before converting
                                         val = float(str(raw).strip().replace(",", ""))
                                 except Exception:
                                     val = None
@@ -478,186 +489,83 @@ else:
                         else:
                             plot_df = pd.DataFrame(rows).sort_values(["DateLabel", "Distance"])
 
-                            # compute axis domains
+                            # === Clean, tight “profile” style chart ===
                             min_dist = int(plot_df["Distance"].min())
                             max_dist = int(plot_df["Distance"].max())
+                            y_min = float(plot_df["Diameter"].min())
+                            y_max = float(plot_df["Diameter"].max())
 
-                            # y-domain mode: either data-driven or fixed to manufacturing MIN/MAX
-                            y_mode = st.radio("Y-axis range mode", ["Data-driven (tight)", "Fixed to MIN/MAX (recommended)"], index=1)
+                            # tight padding so small variation is visible (like your Excel image)
+                            y_pad = (y_max - y_min) * 0.05 if (y_max - y_min) > 0 else 0.2
+                            y_domain = [y_min - y_pad, y_max + y_pad]
 
-                            if y_mode.startswith("Data"):
-                                y_min = float(plot_df["Diameter"].min())
-                                y_max = float(plot_df["Diameter"].max())
-                                y_padding = (y_max - y_min) * 1.6
-                                y_domain =[ y_min - y_padding, y_max + y_padding]
-                            else:
-                                margin = (MAX_DIA - MIN_DIA) * 0.03
-                                y_domain = [MIN_DIA - margin, MAX_DIA + margin]
-
-                            # prepare Altair chart with explicit domains and ticks
+                            # distance ticks based on found columns (keeps original order)
                             x_axis_values = [d for d, _ in found_distance_cols]
-                            base = alt.Chart(plot_df).encode(
-                                x=alt.X("Distance:Q",
+
+                            chart = (
+                                alt.Chart(plot_df, title="Dirty Roll Profile")
+                                .mark_line(point=alt.OverlayMarkDef(filled=True, size=60), interpolate="monotone")
+                                .encode(
+                                    x=alt.X(
+                                        "Distance:Q",
                                         title="Distance (mm)",
                                         scale=alt.Scale(domain=[min_dist, max_dist]),
-                                        axis=alt.Axis(values=x_axis_values)
-                                       ),
-                                y=alt.Y("Diameter:Q",
+                                        axis=alt.Axis(values=x_axis_values, labelFontSize=12, titleFontSize=12),
+                                    ),
+                                    y=alt.Y(
+                                        "Diameter:Q",
                                         title="Diameter (mm)",
                                         scale=alt.Scale(domain=y_domain),
-                                        axis=alt.Axis(tickMinStep=5)
-                                       ),
-                                color=alt.Color("DateLabel:N", title="Date"),
-                                tooltip=["DateLabel", "Distance", alt.Tooltip("Diameter", format=".2f")]
+                                        axis=alt.Axis(labelFontSize=12, titleFontSize=12),
+                                    ),
+                                    color=alt.Color("DateLabel:N", title="Date", legend=alt.Legend(labelFontSize=11, titleFontSize=12)),
+                                    tooltip=[
+                                        alt.Tooltip("DateLabel", title="Date"),
+                                        alt.Tooltip("Distance", title="Distance (mm)"),
+                                        alt.Tooltip("Diameter", title="Diameter (mm)", format=".3f"),
+                                    ],
+                                )
+                                .properties(height=380)
+                                .configure_title(fontSize=16, anchor="middle")
                             )
 
-                            chart = base.mark_line(point=True, interpolate="monotone").interactive().properties(height=420)
+                            # render chart
                             st.altair_chart(chart, use_container_width=True)
-                            # --- Downloads: PNG / SVG image of the chart + CSV of plotted data ---
-def _export_chart_png(chart_obj, plot_df_local):
-    """
-    Try exporting Altair chart as PNG; if that fails, fall back to Matplotlib.
-    Returns PNG bytes.
-    """
-    # 1) Prefer Altair direct export (requires altair_saver + vl-convert)
-  # === Clean, tight “profile” style chart ===
-min_dist = int(plot_df["Distance"].min())
-max_dist = int(plot_df["Distance"].max())
-y_min = float(plot_df["Diameter"].min())
-y_max = float(plot_df["Diameter"].max())
 
-# small Y padding (5%)
-y_pad = (y_max - y_min) * 0.05 if (y_max - y_min) > 0 else 0.2
-y_domain = [y_min - y_pad, y_max + y_pad]
+                            # show pivot/sample table
+                            pivot = plot_df.pivot_table(index="Distance", columns="DateLabel", values="Diameter")
+                            st.markdown("**Data plotted (sample):**")
+                            st.dataframe(pivot.reset_index(), use_container_width=True)
 
-# distance ticks
-x_axis_values = [100, 350, 600, 850, 1100, 1350, 1600]
+                            # --- Download buttons (PNG, SVG if available, CSV) ---
+                            def export_chart_png(chart_obj, plot_df_local):
+                                # Try Altair saver first (best quality). If not available, fallback to Matplotlib.
+                                try:
+                                    from altair_saver import save as alt_save
+                                    buf = BytesIO()
+                                    alt_save(chart_obj, fp=buf, fmt="png", scale=2)
+                                    buf.seek(0)
+                                    return buf.getvalue()
+                                except Exception:
+                                    pass
 
-# build Altair chart
-chart = (
-    alt.Chart(plot_df, title="Dirty Roll Profile")
-    .mark_line(point=alt.OverlayMarkDef(filled=True, size=60))
-    .encode(
-        x=alt.X(
-            "Distance:Q",
-            title="Distance (mm)",
-            scale=alt.Scale(domain=[min_dist, max_dist]),
-            axis=alt.Axis(values=x_axis_values, labelFontSize=13, titleFontSize=13),
-        ),
-        y=alt.Y(
-            "Diameter:Q",
-            title="Diameter (mm)",
-            scale=alt.Scale(domain=y_domain),
-            axis=alt.Axis(labelFontSize=13, titleFontSize=13),
-        ),
-        color=alt.Color("DateLabel:N", title="Date", legend=alt.Legend(labelFontSize=12, titleFontSize=12)),
-        tooltip=[
-            alt.Tooltip("DateLabel", title="Date"),
-            alt.Tooltip("Distance", title="Distance (mm)"),
-            alt.Tooltip("Diameter", title="Diameter (mm)", format=".3f"),
-        ],
-    )
-    .properties(height=380)
-    .configure_title(fontSize=18, anchor="middle")
-)
+                                try:
+                                    fig, ax = plt.subplots(figsize=(9, 4.5))
+                                    for lbl, grp in plot_df_local.groupby("DateLabel"):
+                                        grp_sorted = grp.sort_values("Distance")
+                                        ax.plot(grp_sorted["Distance"], grp_sorted["Diameter"], marker="o", label=str(lbl))
+                                    ax.set_title("Dirty Roll Profile")
+                                    ax.set_xlabel("Distance (mm)")
+                                    ax.set_ylabel("Diameter (mm)")
+                                    ax.grid(True, alpha=0.3)
+                                    ax.legend(loc="best", fontsize=8)
+                                    buf = BytesIO()
+                                    fig.savefi
 
-# show chart
-st.altair_chart(chart, use_container_width=True)
-
-# --- show pivot table below the chart ---
-pivot = plot_df.pivot_table(index="Distance", columns="DateLabel", values="Diameter")
-st.markdown("**Data plotted (sample):**")
-st.dataframe(pivot.reset_index(), use_container_width=True)
-
-# --- Download buttons section ---
-from io import BytesIO
-import matplotlib.pyplot as plt
-
-def export_chart_png(chart_obj, plot_df_local):
-    """Try Altair -> PNG, else fallback to Matplotlib."""
-    try:
-        from altair_saver import save as alt_save
-        buf = BytesIO()
-        alt_save(chart_obj, fp=buf, fmt="png", scale=2)
-        buf.seek(0)
-        return buf.getvalue()
-    except Exception:
-        pass
-
-    try:
-        fig, ax = plt.subplots(figsize=(9, 4.5))
-        for lbl, grp in plot_df_local.groupby("DateLabel"):
-            grp_sorted = grp.sort_values("Distance")
-            ax.plot(grp_sorted["Distance"], grp_sorted["Diameter"], marker="o", label=str(lbl))
-        ax.set_title("Dirty Roll Profile")
-        ax.set_xlabel("Distance (mm)")
-        ax.set_ylabel("Diameter (mm)")
-        ax.grid(True, alpha=0.3)
-        ax.legend(loc="best", fontsize=8)
-        buf = BytesIO()
-        fig.savefig(buf, format="png", dpi=220, bbox_inches="tight")
-        plt.close(fig)
-        buf.seek(0)
-        return buf.getvalue()
-    except Exception as e:
-        st.error(f"Could not export PNG: {e}")
-        return None
-
-def export_chart_svg(chart_obj):
-    """Try to export Altair chart as SVG vector."""
-    try:
-        from altair_saver import save as alt_save
-        buf = BytesIO()
-        alt_save(chart_obj, fp=buf, fmt="svg")
-        buf.seek(0)
-        return buf.getvalue()
-    except Exception:
-        return None
-
-# prepare data for download
-png_bytes = export_chart_png(chart, plot_df)
-svg_bytes = export_chart_svg(chart)
-csv_bytes = plot_df.to_csv(index=False).encode("utf-8")
-
-# buttons row
-st.markdown("#### ⬇️ Download")
-c1, c2, c3 = st.columns(3)
-
-with c1:
-    if png_bytes:
-        st.download_button(
-            "Download PNG",
-            data=png_bytes,
-            file_name=f"roll_profile_{selected_roll}.png",
-            mime="image/png",
-            use_container_width=True,
-        )
-    else:
-        st.info("PNG export not available.")
-
-with c2:
-    if svg_bytes:
-        st.download_button(
-            "Download SVG (vector)",
-            data=svg_bytes,
-            file_name=f"roll_profile_{selected_roll}.svg",
-            mime="image/svg+xml",
-            use_container_width=True,
-        )
-    else:
-        st.caption("SVG export requires `altair_saver` + `vl-convert`.")
-
-with c3:
-    st.download_button(
-        "Download CSV (data)",
-        data=csv_bytes,
-        file_name=f"roll_profile_{selected_roll}.csv",
-        mime="text/csv",
-        use_container_width=True,
-    )
 
 
                           
+
 
 
 
