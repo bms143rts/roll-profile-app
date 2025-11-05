@@ -585,8 +585,7 @@ else:
                             # --- download buttons ---
                             st.markdown("#### ⬇️ Download")
                             c1 = st.columns(1)
-                            
-                            if png_bytes:
+                    
                                     st.download_button(
                                         "Download PNG",
                                         data=png_bytes,
@@ -594,15 +593,14 @@ else:
                                         mime="image/png",
                                         use_container_width=True,
                                     )
-                                else:
-                                    st.info("PNG export not available.")
-                       
+                             
 
             else:
                 st.info("Please choose a Roll No to plot.")
 
 
                           
+
 
 
 
