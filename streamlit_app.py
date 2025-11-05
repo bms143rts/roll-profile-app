@@ -413,7 +413,7 @@ else:
 
         # Build map of distance column names present in the sheet.
         # Accept columns named like "100", "100 mm", "100mm", "100 "
-        desired_distances = [100, 350, 600, 850, 1100, 1350, 1600]
+        desired_distances = [100.00, 350.00, 600.00, 850.00, 1100.00, 1350.00, 1600.00]
         found_distance_cols = []
         for col in df_plot.columns:
             col_clean = col.lower().replace("mm", "").replace(" ", "").replace("_", "")
@@ -481,6 +481,7 @@ else:
                             pivot = plot_df.pivot_table(index="Distance", columns="DateLabel", values="Diameter")
                             st.markdown("**Data plotted (sample):**")
                             st.dataframe(pivot.reset_index(), use_container_width=True)
+
 
 
 
