@@ -597,7 +597,7 @@ except Exception as e:
 
 
 # --- Downloads (PNG via altair_saver or matplotlib fallback, SVG, CSV) ---
-                from io import BytesIO
+                
                 import matplotlib.pyplot as plt
 
                 def export_chart_png(chart_obj, plot_df_local):
@@ -684,6 +684,7 @@ except Exception as e:
 
 
                           
+
 
 
 
