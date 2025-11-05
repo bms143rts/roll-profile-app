@@ -594,7 +594,7 @@ try:
     st.markdown(html_table, unsafe_allow_html=True)
 except Exception as e:
     st.error(f"Could not render formatted table: {e}")
-    st.dataframe(plot_df, use_container_width=True)
+    
 
 
                             # pivot table
@@ -603,6 +603,7 @@ except Exception as e:
 
 
                           
+
 
 
 
