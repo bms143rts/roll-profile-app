@@ -585,9 +585,8 @@ else:
                             # --- download buttons ---
                             st.markdown("#### ⬇️ Download")
                             c1 = st.columns(1)
-                    
-                                    st.download_button(
-                                        "Download PNG",
+                            st.download_button(
+                                       "Download PNG",
                                         data=png_bytes,
                                         file_name=f"roll_profile_{selected_roll}.png",
                                         mime="image/png",
@@ -600,6 +599,7 @@ else:
 
 
                           
+
 
 
 
