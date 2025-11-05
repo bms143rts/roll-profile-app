@@ -284,8 +284,8 @@ if not df.empty:
             roll_data = df[df['Roll No'] == selected_roll].iloc[0]
             
             # Extract diameter values
-            positions = []
-            diameters = []
+            chart_positions = []
+            chart_diameters = []
             for dist in DISTANCES:
                 # Try both string and integer column names
                 col_name = None
@@ -301,16 +301,16 @@ if not df.empty:
                     if val_str != "" and val_str != "0.00" and val_str != "0" and val_str.lower() != "nan":
                         try:
                             # Remove commas and convert to float
-                            positions.append(dist)
-                            diameters.append(float(val_str.replace(',', '')))
+                            chart_positions.append(dist)
+                            chart_diameters.append(float(val_str.replace(',', '')))
                         except (ValueError, AttributeError):
                             continue
             
-            if positions and diameters:
+            if chart_positions and chart_diameters:
                 # Create chart data
                 chart_df = pd.DataFrame({
-                    'Position (mm)': positions,
-                    'Diameter (mm)': diameters
+                    'Position (mm)': chart_positions,
+                    'Diameter (mm)': chart_diameters
                 })
                 
                 # Display line chart with proper styling
