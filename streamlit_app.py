@@ -584,7 +584,7 @@ else:
 
                             # --- download buttons ---
                             st.markdown("#### ⬇️ Download")
-                            c1, c2, c3 = st.columns(3)
+                            c1 = st.columns(1)
                             with c1:
                                 if png_bytes:
                                     st.download_button(
@@ -597,20 +597,13 @@ else:
                                 else:
                                     st.info("PNG export not available.")
                        
-                            with c3:
-                                st.download_button(
-                                    "Download CSV",
-                                    data=csv_bytes,
-                                    file_name=f"roll_profile_{selected_roll}.csv",
-                                    mime="text/csv",
-                                    use_container_width=True,
-                                )
 
             else:
                 st.info("Please choose a Roll No to plot.")
 
 
                           
+
 
 
 
