@@ -378,57 +378,66 @@ with st.container():
         st.markdown('</div>', unsafe_allow_html=True)
 # ---------- Robust Plot section: select Roll ID and plot profile by date ----------
 import altair as alt
+import re
 
 st.markdown("## 📈 Plot Roll Profile")
 
 if df.empty:
     st.info("No data to plot.")
 else:
-    # --- helper: find column ignoring case ---
-    def find_col(df, candidates):
-        cols = {c.lower(): c for c in df.columns}
+    # Helper to normalize and find columns (works on a DataFrame copy)
+    def find_col_by_candidates(df_cols, candidates):
+        cols_map = {c.strip().lower(): c for c in df_cols}
         for cand in candidates:
-            if cand.lower() in cols:
-                return cols[cand.lower()]
+            cand_norm = cand.strip().lower()
+            if cand_norm in cols_map:
+                return cols_map[cand_norm]
         return None
 
-    # try common names
-    date_col = find_col(df, ["Date", "date", "Entry Date", "entry_date"])
-    roll_col = find_col(df, ["Roll No", "RollNo", "roll_no", "roll no", "Roll", "roll"])
+    # Make a normalized copy to work with but keep original column names mapping
+    orig_cols = list(df.columns)
+    norm_map = {c: c.strip() for c in orig_cols}  # we'll strip leading/trailing spaces
+    df_plot = df.copy()
+    df_plot.rename(columns=norm_map, inplace=True)
+    norm_cols = list(df_plot.columns)
+
+    # Find Date and Roll columns from normalized column names
+    date_col = find_col_by_candidates(norm_cols, ["date", "entry date", "entry_date", "Date"])
+    roll_col = find_col_by_candidates(norm_cols, ["roll no", "rollno", "roll_no", "roll", "Roll No", "Roll"])
 
     if date_col is None or roll_col is None:
-        st.error("Could not find required 'Date' or 'Roll No' columns in the sheet. Found columns: " + ", ".join(df.columns))
+        st.error("Could not find required 'Date' or 'Roll No' columns in the sheet. Found columns: " + ", ".join(norm_cols))
     else:
-        # Normalize df copy
-        df_plot = df.copy()
-        df_plot.columns = [c.strip() for c in df_plot.columns]
-
-        # Ensure Date is string/datetime and produce a label
+        # Ensure Date is datetime where possible and produce a label
         try:
             df_plot[date_col] = pd.to_datetime(df_plot[date_col])
             df_plot["_date_label"] = df_plot[date_col].dt.strftime("%Y-%m-%d")
         except Exception:
-            # fallback to string
             df_plot["_date_label"] = df_plot[date_col].astype(str)
 
-        # Build map of distance column names present in the sheet.
-        # Accept columns named like "100", "100 mm", "100mm", "100 "
-        desired_distances = [100.00, 350.00, 600.00, 850.00, 1100.00, 1350.00, 1600.00]
-        found_distance_cols = []
-        for col in df_plot.columns:
-            col_clean = col.lower().replace("mm", "").replace(" ", "").replace("_", "")
-            for d in desired_distances:
-                if col_clean == str(d):
-                    found_distance_cols.append((d, col))
-                    break
+        # Detect distance columns robustly by extracting the first integer number in the header
+        desired_distances = [100, 350, 600, 850, 1100, 1350, 1600]  # integers
+        found_distance_cols = []  # list of tuples (distance_int, original_col_name)
+
+        for col in norm_cols:
+            # extract first integer (or integer part of float) from column text
+            m = re.search(r"(\d+)", str(col))
+            if m:
+                try:
+                    dist = int(m.group(1))
+                except:
+                    continue
+                if dist in desired_distances:
+                    # append the *original* column name in df_plot (which we normalized by strip)
+                    found_distance_cols.append((dist, col))
+
+        # Ensure we maintain the order of desired_distances
+        found_distance_cols = sorted(found_distance_cols, key=lambda x: desired_distances.index(x[0])) if found_distance_cols else []
 
         if not found_distance_cols:
-            st.error("No distance columns (100,350,600...) detected. Sheet columns: " + ", ".join(df_plot.columns))
+            st.error("No distance columns (100, 350, 600, ...) detected. Sheet columns: " + ", ".join(norm_cols))
         else:
-            # ensure order by distance
-            found_distance_cols = sorted(found_distance_cols, key=lambda x: desired_distances.index(x[0]))
-
-            # let user pick roll id
+            # Let user pick roll id
             roll_options = sorted(df_plot[roll_col].astype(str).unique())
             selected_roll = st.selectbox("Select Roll No", ["-- choose --"] + roll_options)
 
@@ -439,9 +448,12 @@ else:
                 else:
                     # list of date labels for this roll
                     date_options = roll_rows["_date_label"].tolist()
-                    # default to most recent (last)
                     default_dates = [date_options[-1]] if date_options else []
-                    chosen_dates = st.multiselect("Select one or more Dates to plot (multiple lines)", options=date_options, default=default_dates)
+                    chosen_dates = st.multiselect(
+                        "Select one or more Dates to plot (multiple lines)",
+                        options=date_options,
+                        default=default_dates
+                    )
 
                     if not chosen_dates:
                         st.info("Select at least one date to plot.")
@@ -455,7 +467,11 @@ else:
                             for d, colname in found_distance_cols:
                                 raw = r.get(colname, None)
                                 try:
-                                    val = float(raw) if (raw is not None and str(raw).strip() != "") else None
+                                    # handle strings with commas, extra spaces etc.
+                                    if raw is None or str(raw).strip() == "":
+                                        val = None
+                                    else:
+                                        val = float(str(raw).strip().replace(",", ""))
                                 except Exception:
                                     val = None
                                 if val is not None:
@@ -481,8 +497,12 @@ else:
                             pivot = plot_df.pivot_table(index="Distance", columns="DateLabel", values="Diameter")
                             st.markdown("**Data plotted (sample):**")
                             st.dataframe(pivot.reset_index(), use_container_width=True)
-st.write("Columns:", list(df.columns))
-st.write(df.head(5).to_dict("records"))
+
+# debug: show helpful diagnostics (remove in prod)
+st.write("Columns:", list(df_plot.columns))
+st.write(df_plot.head(5).to_dict("records"))
+
+
 
 
 
