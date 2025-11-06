@@ -526,8 +526,9 @@ else:
                             st.altair_chart(chart, use_container_width=True)
                           # simpler table – shows Distance, Diameter, and Date in rows
 st.markdown("**Data plotted (sample):**")
-display_df = plot_df[["DateLabel", "Distance", "Diameter"]].sort_values(["DateLabel", "Distance"])
+display_df = plot_df[["Distance", "Diameter"]].sort_values(["Distance"])
 st.dataframe(display_df, use_container_width=True)
+
 
 
 
