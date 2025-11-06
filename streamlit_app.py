@@ -1,4 +1,4 @@
-want to clear form after successful  entry form import streamlit as st 
+import streamlit as st 
 import pandas as pd
 from io import BytesIO
 from docx import Document
@@ -677,6 +677,7 @@ else:
                 st.info("Please choose a Roll No from the dropdown to plot.")
 
 st.markdown('</div>', unsafe_allow_html=True)
+
 
 
 
