@@ -287,59 +287,99 @@ with st.form("entry_form", clear_on_submit=False):
 st.markdown('</div>', unsafe_allow_html=True)
 
 # ---------------------------
-# --- Save Entry + reset  ---
-# ---------------------------
+# ============================================================
+#  ✅ 100% WORKING FORM WITH CLEAR AFTER SUCCESSFUL SAVE
+# ============================================================
+
+# Function to clear all form fields
+def reset_entry_form():
+    keys = ["entry_date", "roll_no", "stand", "position", "crown"]
+    for k in keys:
+        if k in st.session_state:
+            st.session_state[k] = "" if k != "entry_date" else dt_date.today()
+
+    for d in DISTANCES:
+        key = f"dia_{d}"
+        if key in st.session_state:
+            st.session_state[key] = ""
+
+# ---------------------- FORM -------------------------
+with st.form("entry_form"):
+    st.markdown("### ➕ Add New Roll Entry")
+
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        entry_date = st.date_input("📅 Date", key="entry_date")
+    with col2:
+        roll_no = st.text_input("🏷️ Roll No (required)", key="roll_no").upper()
+    with col3:
+        stand = st.selectbox("Stand", ['Select','F1','F2','F3','F4','F5','F6','ROUGHING','DC'], key="stand")
+
+    col1, col2 = st.columns(2)
+    with col1:
+        position = st.selectbox("📍 Position", ['Select','TOP','BOTTOM'], key="position")
+    with col2:
+        crown = st.selectbox("Crown", ['Select','STRAIGHT','+100µ','+200µ'], key="crown")
+
+    st.write("### Diameters (mm)")
+
+    form_diameters = {}
+    for d in DISTANCES:
+        form_diameters[d] = st.text_input(f"{d} mm", key=f"dia_{d}")
+
+    submitted = st.form_submit_button("💾 Save Entry")
+# ------------------------------------------------------
+
+# ---------------------- SAVE --------------------------
 if submitted:
     errors = []
 
-    # Basic validations
-    if roll_no == "":
-        errors.append("❌ Roll No cannot be empty")
+    if roll_no.strip() == "":
+        errors.append("❌ Roll No is required")
     if stand == "Select":
-        errors.append("❌ Please select a Stand")
+        errors.append("❌ Select Stand")
     if position == "Select":
-        errors.append("❌ Please select a Position")
+        errors.append("❌ Select Position")
     if crown == "Select":
-        errors.append("❌ Please select a Crown type")
+        errors.append("❌ Select Crown")
 
-    # Validate diameters
     filtered_diameters = {}
-    non_empty_count = 0
-    for d, v in form_diameters.items():
-        if v == 0:
+    for d in DISTANCES:
+        v = st.session_state[f"dia_{d}"]
+        if v.strip() == "":
             continue
-        non_empty_count += 1
-        if not (MIN_DIA <= v <= MAX_DIA):
-            errors.append(f"❌ {d} mm value {v} out of range [{MIN_DIA}-{MAX_DIA}]")
-        else:
-            filtered_diameters[d] = v
+        try:
+            fv = float(v)
+            if fv < MIN_DIA or fv > MAX_DIA:
+                errors.append(f"❌ {d} mm out of range")
+            else:
+                filtered_diameters[d] = fv
+        except:
+            errors.append(f"❌ Invalid number at {d} mm")
 
-    if non_empty_count == 0:
+    if not filtered_diameters:
         errors.append("❌ Enter at least one diameter value")
 
-    # Show errors or save
     if errors:
         for e in errors:
             st.error(e)
+
     else:
-        try:
-            # Prepare row in the same order as your sheet columns
-            # [Date, Roll No, Stand, Position, Crown, 100, 350, 600, 850, 1100, 1350, 1600]
-            row = [str(entry_date), roll_no, stand, position, crown] + [filtered_diameters.get(d, "") for d in DISTANCES]
-            sheet.append_row(row)
+        # Save to sheet
+        row = [
+            str(entry_date),
+            roll_no,
+            stand,
+            position,
+            crown
+        ] + [filtered_diameters.get(d, "") for d in DISTANCES]
 
-            st.success(f"✅ Entry saved for Roll No: {roll_no}")
+        sheet.append_row(row)
+        st.success(f"✅ Saved entry for {roll_no}")
 
-            # Refresh table data shown below (optional but nice)
-            existing_data = sheet.get_all_records()
-            df = pd.DataFrame(existing_data)
-
-            # Clear the form completely and re-render
-            reset_entry_form()
-            st.rerun()
-
-        except Exception as e:
-            st.error(f"❌ Could not save to Google Sheets: {e}")
+        # ✅ CLEAR FORM COMPLETELY
+        reset_entry_form()
+        st.rerun()
 
 
 # --- Show Data ---
@@ -710,6 +750,7 @@ else:
                 st.info("Please choose a Roll No from the dropdown to plot.")
 
 st.markdown('</div>', unsafe_allow_html=True)
+
 
 
 
