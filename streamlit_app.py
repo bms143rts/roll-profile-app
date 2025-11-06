@@ -527,7 +527,24 @@ else:
                           # simpler table – shows Distance, Diameter, and Date in rows
 st.markdown("**Data plotted (sample):**")
 display_df = plot_df[["Distance", "Diameter"]]
+# Safe display: only show table when plot_df exists and has data
+if ( 'plot_df' in locals() ) and isinstance(plot_df, pd.DataFrame) and not plot_df.empty:
+    st.markdown("**Data plotted (sample):**")
+    display_df = plot_df[["Distance", "Diameter"]].copy()
+    # If distances are not sorted, sort them
+    display_df = display_df.sort_values("Distance").reset_index(drop=True)
+    st.dataframe(display_df, use_container_width=True, hide_index=True)
+else:
+    # More helpful message depending on what's missing
+    if not (selected_roll and selected_roll != "-- choose --"):
+        st.info("Please choose a Roll No from the dropdown to plot.")
+    elif 'chosen_dates' not in locals() or not chosen_dates:
+        st.info("Please select one or more Dates to plot.")
+    else:
+        st.info("No numeric diameter data available for the selected Roll/Date. Check sheet values.")
+
 st.dataframe(display_df, use_container_width=True, hide_index=True)
+
 
 
 
