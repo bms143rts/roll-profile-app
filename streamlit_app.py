@@ -525,8 +525,6 @@ else:
 
                             st.altair_chart(chart, use_container_width=True)
                           # simpler table – shows Distance, Diameter, and Date in rows
-st.markdown("**Data plotted (sample):**")
-display_df = plot_df[["Distance", "Diameter"]]
 # Safe display: only show table when plot_df exists and has data
 if ( 'plot_df' in locals() ) and isinstance(plot_df, pd.DataFrame) and not plot_df.empty:
     st.markdown("**Data plotted (sample):**")
@@ -543,7 +541,7 @@ else:
     else:
         st.info("No numeric diameter data available for the selected Roll/Date. Check sheet values.")
 
-st.dataframe(display_df, use_container_width=True, hide_index=True)
+
 
 
 
