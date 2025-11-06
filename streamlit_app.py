@@ -524,7 +524,11 @@ else:
                             )
 
                             st.altair_chart(chart, use_container_width=True)
-st.markdown("#### ⬇️ Download")
+                            import altair as alt
+import re
+from io import BytesIO
+import matplotlib.pyplot as plt
+                            st.markdown("#### ⬇️ Download")
                             c1, c2, c3 = st.columns(3)
                             with c1:
                                 if png_bytes:
@@ -556,6 +560,7 @@ st.markdown("#### ⬇️ Download")
                                     mime="text/csv",
                                     use_container_width=True,
                                 )
+
 
 
 
