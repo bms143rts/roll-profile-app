@@ -632,7 +632,7 @@ else:
                                             'name_font': {'size': 11, 'bold': True},
                                             'num_font': {'size': 10}
                                         })
-                                        chart.set_size({'width': 720, 'height': 450})
+                                        chart.set_size({'width': 720, 'height':350})
                                         chart.set_legend({'position': 'right', 'font': {'size': 10}})
                                         chart.set_style(10)
                                         
@@ -677,5 +677,6 @@ else:
                 st.info("Please choose a Roll No from the dropdown to plot.")
 
 st.markdown('</div>', unsafe_allow_html=True)
+
 
 
