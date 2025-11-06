@@ -490,7 +490,7 @@ else:
                             max_dist = int(plot_df["Distance"].max())
                             y_min = float(plot_df["Diameter"].min())
                             y_max = float(plot_df["Diameter"].max())
-                            y_pad = (y_max - y_min) * 0.05 if (y_max - y_min) > 0 else 0.2
+                            y_pad = (y_max - y_min) * 1 if (y_max - y_min) > 0 else 0.2
                             y_domain = [y_min - y_pad, y_max + y_pad]
                             x_axis_values = [d for d, _ in found_distance_cols]
 
@@ -524,6 +524,7 @@ else:
                             )
 
                             st.altair_chart(chart, use_container_width=True)
+
 
 
 
