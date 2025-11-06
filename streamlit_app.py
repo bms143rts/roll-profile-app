@@ -621,7 +621,7 @@ else:
                                                 },
                                             })
                                         
-                                        chart.set_title({'name': 'Dirty Roll Profile', 'name_font': {'size': 14, 'bold': True}})
+                                        chart.set_title({'name': f'{roll_id}', 'name_font': {'size': 14, 'bold': True}})
                                         chart.set_x_axis({
                                             'name': 'Distance (mm)',
                                             'name_font': {'size': 11, 'bold': True},
@@ -677,4 +677,5 @@ else:
                 st.info("Please choose a Roll No from the dropdown to plot.")
 
 st.markdown('</div>', unsafe_allow_html=True)
+
 
