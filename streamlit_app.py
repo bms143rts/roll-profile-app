@@ -257,7 +257,7 @@ with st.container():
         with col1:
             position = st.selectbox("📍 Position", ['Select', 'TOP', 'BOTTOM'], index=0)
         with col2:
-            crown = st.selectbox(" Crown", ['Select', 'STRAIGHT', '+100 MICRON', '+200 MICRON'], index=0)
+            crown = st.selectbox(" Crown", ['Select', 'STRAIGHT', '+100µ', '+200µ'], index=0)
 
         st.markdown('<p class="diameter-label">📏 Diameters (mm) — must be between 1245 and 1352</p>', unsafe_allow_html=True)
         
@@ -677,6 +677,7 @@ else:
                 st.info("Please choose a Roll No from the dropdown to plot.")
 
 st.markdown('</div>', unsafe_allow_html=True)
+
 
 
 
