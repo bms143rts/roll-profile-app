@@ -524,18 +524,6 @@ else:
                             )
 
                             st.altair_chart(chart, use_container_width=True)
-                            # ---------- Display neatly formatted roll data (no Date column, Roll ID header) ----------
-def render_merged_roll_table(plot_df_local, selected_roll):
-    """
-    Renders an HTML table where the first row is a merged header showing Roll ID,
-    and below are columns: Distance + Diameter #1, Diameter #2, ...
-    """
-    import html
-
-    # Get ordered unique distances and dates
-    distances = sorted(plot_df_local["Distance"].unique())
-    date_labels = list(plot_df_local["DateLabel"].unique())  # preserves order
-    dia_headers = [f"Diameter #{i+1}" for i in range(len(date_labels))]
 
     # Map distance -> list of diameters per date
     data_map = {d: ["" for _ in date_labels] for d in distances}
@@ -679,6 +667,7 @@ if selected_roll and selected_roll != "-- choose --":
 
               
               
+
 
 
 
