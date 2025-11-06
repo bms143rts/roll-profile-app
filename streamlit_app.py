@@ -561,8 +561,8 @@ else:
                                             'align': 'center'
                                         })
                                         
-                                        # Title
-                                        worksheet.merge_range('A1:C1', 'Dirty Roll Profile', title_format)
+                                        # Title - using Roll ID
+                                        worksheet.merge_range('A1:C1', f'{roll_id}', title_format)
                                         worksheet.set_row(0, 25)
                                         
                                         # Roll information
@@ -583,7 +583,7 @@ else:
                                         
                                         dates_list = sorted(plot_data['DateLabel'].unique())
                                         for idx, date_label in enumerate(dates_list):
-                                            worksheet.write(row, idx + 1, date_label, header_format)
+                                            worksheet.write(row, idx + 1, 'Diameter', header_format)
                                         
                                         row += 1
                                         data_start_row = row
@@ -610,7 +610,7 @@ else:
                                         for idx, date_label in enumerate(dates_list):
                                             col_letter = chr(66 + idx)  # B, C, D, etc.
                                             chart.add_series({
-                                                'name': f'=\'Roll Profile\'!${col_letter}${start_row+1}',
+                                                'name': 'Dirty Profile',
                                                 'categories': f'=\'Roll Profile\'!$A${data_start_row+1}:$A${data_end_row+1}',
                                                 'values': f'=\'Roll Profile\'!${col_letter}${data_start_row+1}:${col_letter}${data_end_row+1}',
                                                 'line': {'color': '#1f77b4' if idx == 0 else None, 'width': 2.5},
@@ -653,7 +653,7 @@ else:
                                     
                                     pivot_data = plot_data.pivot_table(
                                         index='Distance', 
-                                        columns='Diameter', 
+                                        columns='DateLabel', 
                                         values='Diameter',
                                         aggfunc='first'
                                     ).reset_index()
@@ -677,4 +677,3 @@ else:
                 st.info("Please choose a Roll No from the dropdown to plot.")
 
 st.markdown('</div>', unsafe_allow_html=True)
-
