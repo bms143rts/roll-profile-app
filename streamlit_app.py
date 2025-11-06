@@ -1,4 +1,4 @@
-import streamlit as st
+import streamlit as st 
 import pandas as pd
 from io import BytesIO
 from docx import Document
@@ -269,8 +269,6 @@ with st.container():
             except ValueError:
                 form_diameters[d] = 0
 
-        st.session_state[f"dia_{d}"] = ""
-
         submitted = st.form_submit_button("💾 Save Entry", use_container_width=True)
 
     st.markdown('</div>', unsafe_allow_html=True)
@@ -310,7 +308,7 @@ if submitted:
 
         existing_data = sheet.get_all_records()
         df = pd.DataFrame(existing_data)
-        st.rerun()
+
 # --- Show Data ---
 with st.container():
     st.markdown('<div class="data-section">', unsafe_allow_html=True)
@@ -679,11 +677,6 @@ else:
                 st.info("Please choose a Roll No from the dropdown to plot.")
 
 st.markdown('</div>', unsafe_allow_html=True)
-
-
-
-
-
 
 
 
