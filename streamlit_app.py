@@ -524,6 +524,38 @@ else:
                             )
 
                             st.altair_chart(chart, use_container_width=True)
+st.markdown("#### ⬇️ Download")
+                            c1, c2, c3 = st.columns(3)
+                            with c1:
+                                if png_bytes:
+                                    st.download_button(
+                                        "Download PNG",
+                                        data=png_bytes,
+                                        file_name=f"roll_profile_{selected_roll}.png",
+                                        mime="image/png",
+                                        use_container_width=True,
+                                    )
+                                else:
+                                    st.info("PNG export not available.")
+                            with c2:
+                                if svg_bytes:
+                                    st.download_button(
+                                        "Download SVG",
+                                        data=svg_bytes,
+                                        file_name=f"roll_profile_{selected_roll}.svg",
+                                        mime="image/svg+xml",
+                                        use_container_width=True,
+                                    )
+                                else:
+                                    st.caption("SVG export requires `altair_saver`.")
+                            with c3:
+                                st.download_button(
+                                    "Download CSV",
+                                    data=csv_bytes,
+                                    file_name=f"roll_profile_{selected_roll}.csv",
+                                    mime="text/csv",
+                                    use_container_width=True,
+                                )
 
 
 
