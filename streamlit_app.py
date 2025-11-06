@@ -527,7 +527,8 @@ else:
                           # simpler table – shows Distance, Diameter, and Date in rows
 st.markdown("**Data plotted (sample):**")
 display_df = plot_df[["Distance", "Diameter"]]
-st.dataframe(display_df, use_container_width=True)
+st.dataframe(display_df, use_container_width=True, hide_index=True)
+
 
 
 
