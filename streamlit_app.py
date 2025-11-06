@@ -308,7 +308,7 @@ if submitted:
 
         existing_data = sheet.get_all_records()
         df = pd.DataFrame(existing_data)
-
+        st.rerun()
 # --- Show Data ---
 with st.container():
     st.markdown('<div class="data-section">', unsafe_allow_html=True)
@@ -677,6 +677,7 @@ else:
                 st.info("Please choose a Roll No from the dropdown to plot.")
 
 st.markdown('</div>', unsafe_allow_html=True)
+
 
 
 
