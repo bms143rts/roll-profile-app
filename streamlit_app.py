@@ -5,6 +5,9 @@ from docx import Document
 from datetime import date as dt_date
 import gspread
 from google.oauth2.service_account import Credentials
+import altair as alt
+import re
+import matplotlib.pyplot as plt
 
 # Hide Streamlit UI elements
 hide_streamlit_ui = """
@@ -80,6 +83,7 @@ custom_css = """
         background: white;
         border-radius: 12px;
         padding: 2rem;
+        margin-bottom: 2rem;
         border: 1px solid var(--border-color);
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
     }
@@ -235,7 +239,7 @@ existing_data = sheet.get_all_records()
 df = pd.DataFrame(existing_data)
 
 # --- Entry Form ---
-diameters = {}
+form_diameters = {}
 with st.container():
     st.markdown('<div class="form-section">', unsafe_allow_html=True)
     with st.form("entry_form", clear_on_submit=False):
@@ -247,30 +251,27 @@ with st.container():
         with col2:
             roll_no = st.text_input("🏷️ Roll No (required)").strip().upper()
         with col3:
-            stand = st.selectbox(" Stand", ['Select', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'ROUGHING', 'DC'], index=0)
+            stand = st.selectbox("🏭 Stand", ['Select', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'ROUGHING', 'DC'], index=0)
 
         col1, col2 = st.columns(2)
         with col1:
             position = st.selectbox("📍 Position", ['Select', 'TOP', 'BOTTOM'], index=0)
         with col2:
-            crown = st.selectbox(" Crown", ['Select', 'STRAIGHT', '+100 MICRON', '+200 MICRON'], index=0)
+            crown = st.selectbox("👑 Crown", ['Select', 'STRAIGHT', '+100 MICRON', '+200 MICRON'], index=0)
 
         st.markdown('<p class="diameter-label">📏 Diameters (mm) — must be between 1245 and 1352</p>', unsafe_allow_html=True)
         
         # Single column for diameter inputs
-        diameters = {}
         for d in DISTANCES:
             val = st.text_input(f"{d} mm", value="", key=f"dia_{d}", placeholder="Enter value")
             try:
-                diameters[d] = float(val) if val.strip() != "" else 0
+                form_diameters[d] = float(val) if val.strip() != "" else 0
             except ValueError:
-                diameters[d] = 0
+                form_diameters[d] = 0
 
         submitted = st.form_submit_button("💾 Save Entry", use_container_width=True)
 
     st.markdown('</div>', unsafe_allow_html=True)
-
-
 
 # --- Save Entry ---
 if submitted:
@@ -278,9 +279,18 @@ if submitted:
 
     if roll_no == "":
         errors.append("❌ Roll No cannot be empty")
+    
+    if stand == "Select":
+        errors.append("❌ Please select a Stand")
+    
+    if position == "Select":
+        errors.append("❌ Please select a Position")
+    
+    if crown == "Select":
+        errors.append("❌ Please select a Crown type")
 
     filtered_diameters = {}
-    for d, v in diameters.items():
+    for d, v in form_diameters.items():
         if v == 0:
             continue
         if not (MIN_DIA <= v <= MAX_DIA):
@@ -376,24 +386,17 @@ with st.container():
                 use_container_width=True
             )
         st.markdown('</div>', unsafe_allow_html=True)
-# ---------- Robust Plot section: select Roll ID and plot profile by date ----------
-import altair as alt
-import re
-from io import BytesIO
-import matplotlib.pyplot as plt
 
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# ---------- Plot Roll Profile Section ----------
+st.markdown('<div class="data-section">', unsafe_allow_html=True)
 st.markdown("## 📈 Plot Roll Profile")
-
-# ensure min/max constants exist
-if "MIN_DIA" not in locals():
-    MIN_DIA = 1245.0
-if "MAX_DIA" not in locals():
-    MAX_DIA = 1352.0
 
 if df.empty:
     st.info("No data to plot.")
 else:
-    # --- helpers ---
+    # --- Helper functions ---
     def find_col_by_candidates(col_list, candidates):
         cols_map = {c.strip().lower(): c for c in col_list}
         for cand in candidates:
@@ -401,26 +404,26 @@ else:
                 return cols_map[cand.strip().lower()]
         return None
 
-    # clean column headers
+    # Clean column headers
     df_plot = df.copy()
     df_plot.rename(columns={c: c.strip() for c in df_plot.columns}, inplace=True)
     norm_cols = list(df_plot.columns)
 
-    # find key columns
+    # Find key columns
     date_col = find_col_by_candidates(norm_cols, ["date", "entry date", "entry_date"])
     roll_col = find_col_by_candidates(norm_cols, ["roll no", "rollno", "roll_no", "roll"])
 
     if date_col is None or roll_col is None:
         st.error("Could not find required 'Date' or 'Roll No' columns in sheet.")
     else:
-        # format date labels
+        # Format date labels
         try:
             df_plot[date_col] = pd.to_datetime(df_plot[date_col])
             df_plot["_date_label"] = df_plot[date_col].dt.strftime("%Y-%m-%d")
         except Exception:
             df_plot["_date_label"] = df_plot[date_col].astype(str)
 
-        # detect distance columns (100, 350, 600, ...)
+        # Detect distance columns
         desired_distances = [100, 350, 600, 850, 1100, 1350, 1600]
         found_distance_cols = []
         for col in norm_cols:
@@ -460,7 +463,7 @@ else:
                     if not chosen_dates:
                         st.info("Select at least one date to plot.")
                     else:
-                        # build long-form dataframe
+                        # Build long-form dataframe
                         rows = []
                         for _, r in roll_rows.iterrows():
                             label = r["_date_label"]
@@ -485,12 +488,12 @@ else:
                         else:
                             plot_df = pd.DataFrame(rows).sort_values(["DateLabel", "Distance"])
 
-                            # --- chart settings ---
+                            # Chart settings
                             min_dist = int(plot_df["Distance"].min())
                             max_dist = int(plot_df["Distance"].max())
                             y_min = float(plot_df["Diameter"].min())
                             y_max = float(plot_df["Diameter"].max())
-                            y_pad = (y_max - y_min) * 1 if (y_max - y_min) > 0 else 0.2
+                            y_pad = (y_max - y_min) * 0.1 if (y_max - y_min) > 0 else 0.2
                             y_domain = [y_min - y_pad, y_max + y_pad]
                             x_axis_values = [d for d, _ in found_distance_cols]
 
@@ -524,66 +527,94 @@ else:
                             )
 
                             st.altair_chart(chart, use_container_width=True)
-                          # simpler table – shows Distance, Diameter, and Date in rows
-# Safe display: only show table when plot_df exists and has data
-if ( 'plot_df' in locals() ) and isinstance(plot_df, pd.DataFrame) and not plot_df.empty:
-    st.markdown("**Data plotted (sample):**")
-    display_df = plot_df[["Distance", "Diameter"]].copy()
-    # If distances are not sorted, sort them
-    display_df = display_df.sort_values("Distance").reset_index(drop=True)
-    st.dataframe(display_df, use_container_width=True, hide_index=True)
-else:
-    # More helpful message depending on what's missing
-    if not (selected_roll and selected_roll != "-- choose --"):
-        st.info("Please choose a Roll No from the dropdown to plot.")
-    elif 'chosen_dates' not in locals() or not chosen_dates:
-        st.info("Please select one or more Dates to plot.")
-    else:
-        st.info("No numeric diameter data available for the selected Roll/Date. Check sheet values.")
 
+                            # Display data table
+                            st.markdown("**Data plotted (sample):**")
+                            display_df = plot_df[["Distance", "Diameter", "DateLabel"]].copy()
+                            display_df = display_df.sort_values("Distance").reset_index(drop=True)
+                            display_df.columns = ["Distance", "Diameter", "Date"]
+                            st.dataframe(display_df, use_container_width=True, hide_index=True)
 
+                            # Download chart as Excel with embedded chart
+                            def to_chart_excel_bytes(plot_data, roll_id, dates_selected):
+                                output = BytesIO()
+                                with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+                                    workbook = writer.book
+                                    worksheet = workbook.add_worksheet('Roll Profile')
+                                    writer.sheets['Roll Profile'] = worksheet
+                                    
+                                    # Formats
+                                    title_format = workbook.add_format({'bold': True, 'font_size': 16, 'align': 'center'})
+                                    info_format = workbook.add_format({'bold': True, 'font_size': 11})
+                                    data_format = workbook.add_format({'font_size': 10})
+                                    header_format = workbook.add_format({'bold': True, 'bg_color': '#1f77b4', 'font_color': 'white', 'align': 'center'})
+                                    
+                                    # Title
+                                    worksheet.merge_range('A1:D1', 'Dirty Roll Profile', title_format)
+                                    
+                                    # Roll information
+                                    row = 2
+                                    worksheet.write(row, 0, 'Roll No:', info_format)
+                                    worksheet.write(row, 1, roll_id, data_format)
+                                    worksheet.write(row, 2, 'Date(s):', info_format)
+                                    worksheet.write(row, 3, ', '.join(dates_selected), data_format)
+                                    
+                                    # Data table
+                                    row += 2
+                                    worksheet.write(row, 0, 'Distance', header_format)
+                                    worksheet.write(row, 1, 'Diameter', header_format)
+                                    worksheet.write(row, 2, 'Date', header_format)
+                                    
+                                    # Group data by date
+                                    for date_label in sorted(plot_data['DateLabel'].unique()):
+                                        date_data = plot_data[plot_data['DateLabel'] == date_label]
+                                        row += 1
+                                        for _, r in date_data.iterrows():
+                                            worksheet.write(row, 0, r['Distance'], data_format)
+                                            worksheet.write(row, 1, r['Diameter'], data_format)
+                                            worksheet.write(row, 2, r['DateLabel'], data_format)
+                                            row += 1
+                                    
+                                    # Create chart
+                                    chart_obj = workbook.add_chart({'type': 'line'})
+                                    
+                                    # Add series for each date
+                                    for idx, date_label in enumerate(sorted(plot_data['DateLabel'].unique())):
+                                        date_data = plot_data[plot_data['DateLabel'] == date_label].sort_values('Distance')
+                                        start_row = 5 + sum(len(plot_data[plot_data['DateLabel'] == d]) for d in sorted(plot_data['DateLabel'].unique())[:idx])
+                                        end_row = start_row + len(date_data) - 1
+                                        
+                                        chart_obj.add_series({
+                                            'name': date_label,
+                                            'categories': f'=\'Roll Profile\'!$A${start_row+1}:$A${end_row+1}',
+                                            'values': f'=\'Roll Profile\'!$B${start_row+1}:$B${end_row+1}',
+                                            'line': {'width': 2},
+                                            'marker': {'type': 'circle', 'size': 8},
+                                        })
+                                    
+                                    chart_obj.set_title({'name': 'Dirty Roll Profile'})
+                                    chart_obj.set_x_axis({'name': 'Distance (mm)'})
+                                    chart_obj.set_y_axis({'name': 'Diameter (mm)'})
+                                    chart_obj.set_size({'width': 720, 'height': 400})
+                                    
+                                    # Insert chart
+                                    worksheet.insert_chart('E2', chart_obj)
+                                    
+                                    # Adjust column widths
+                                    worksheet.set_column('A:C', 12)
+                                    worksheet.set_column('D:D', 20)
+                                
+                                output.seek(0)
+                                return output.getvalue()
 
+                            st.download_button(
+                                "⬇️ Download Chart as Excel",
+                                data=to_chart_excel_bytes(plot_df, selected_roll, chosen_dates),
+                                file_name=f"roll_profile_{selected_roll}.xlsx",
+                                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                                use_container_width=True
+                            )
+            else:
+                st.info("Please choose a Roll No from the dropdown to plot.")
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+st.markdown('</div>', unsafe_allow_html=True)
