@@ -562,7 +562,7 @@ else:
                                         })
                                         
                                         # Title - using Roll ID
-                                        worksheet.merge_range('A1:C1', f'{roll_id}', title_format)
+                                        worksheet.merge_range('A1:C1','Dirty roll profile', title_format)
                                         worksheet.set_row(0, 25)
                                         
                                         # Roll information
@@ -677,3 +677,4 @@ else:
                 st.info("Please choose a Roll No from the dropdown to plot.")
 
 st.markdown('</div>', unsafe_allow_html=True)
+
