@@ -653,7 +653,7 @@ else:
                                     
                                     pivot_data = plot_data.pivot_table(
                                         index='Distance', 
-                                        columns='DateLabel', 
+                                        columns='Diameter', 
                                         values='Diameter',
                                         aggfunc='first'
                                     ).reset_index()
@@ -677,3 +677,4 @@ else:
                 st.info("Please choose a Roll No from the dropdown to plot.")
 
 st.markdown('</div>', unsafe_allow_html=True)
+
