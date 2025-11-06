@@ -251,13 +251,13 @@ with st.container():
         with col2:
             roll_no = st.text_input("🏷️ Roll No (required)").strip().upper()
         with col3:
-            stand = st.selectbox("🏭 Stand", ['Select', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'ROUGHING', 'DC'], index=0)
+            stand = st.selectbox(" Stand", ['Select', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'ROUGHING', 'DC'], index=0)
 
         col1, col2 = st.columns(2)
         with col1:
             position = st.selectbox("📍 Position", ['Select', 'TOP', 'BOTTOM'], index=0)
         with col2:
-            crown = st.selectbox("👑 Crown", ['Select', 'STRAIGHT', '+100 MICRON', '+200 MICRON'], index=0)
+            crown = st.selectbox(" Crown", ['Select', 'STRAIGHT', '+100 MICRON', '+200 MICRON'], index=0)
 
         st.markdown('<p class="diameter-label">📏 Diameters (mm) — must be between 1245 and 1352</p>', unsafe_allow_html=True)
         
@@ -493,7 +493,7 @@ else:
                             max_dist = int(plot_df["Distance"].max())
                             y_min = float(plot_df["Diameter"].min())
                             y_max = float(plot_df["Diameter"].max())
-                            y_pad = (y_max - y_min) * 0.1 if (y_max - y_min) > 0 else 0.2
+                            y_pad = (y_max - y_min) * 1 if (y_max - y_min) > 0 else 0.6
                             y_domain = [y_min - y_pad, y_max + y_pad]
                             x_axis_values = [d for d, _ in found_distance_cols]
 
@@ -529,7 +529,7 @@ else:
                             st.altair_chart(chart, use_container_width=True)
 
                             # Display data table below chart
-                            st.markdown("**Data plotted (sample):**")
+                            st.markdown("**Plotted Roll Data :**")
                             display_df = plot_df[["Distance", "Diameter"]].copy()
                             display_df = display_df.sort_values("Distance").reset_index(drop=True)
                             st.dataframe(display_df, use_container_width=True, hide_index=True)
@@ -677,6 +677,7 @@ else:
                 st.info("Please choose a Roll No from the dropdown to plot.")
 
 st.markdown('</div>', unsafe_allow_html=True)
+
 
 
 
