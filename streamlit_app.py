@@ -268,16 +268,7 @@ with st.container():
                 form_diameters[d] = float(val) if val.strip() != "" else 0
             except ValueError:
                 form_diameters[d] = 0
-def reset_entry_form():
-    """Clear all form fields after successful save."""
-    # reset simple fields
-    st.session_state["entry_date"] = dt_date.today()
-    st.session_state["roll_no"] = ""
-    st.session_state["stand"] = 'Select'
-    st.session_state["position"] = 'Select'
-    st.session_state["crown"] = 'Select'
-    # reset all diameter inputs
-    for d in DISTANCES:
+
         st.session_state[f"dia_{d}"] = ""
 
         submitted = st.form_submit_button("💾 Save Entry", use_container_width=True)
@@ -688,6 +679,7 @@ else:
                 st.info("Please choose a Roll No from the dropdown to plot.")
 
 st.markdown('</div>', unsafe_allow_html=True)
+
 
 
 
