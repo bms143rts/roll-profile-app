@@ -528,81 +528,140 @@ else:
 
                             st.altair_chart(chart, use_container_width=True)
 
-                            # Display data table
+                            # Display data table below chart
                             st.markdown("**Data plotted (sample):**")
-                            display_df = plot_df[["Distance", "Diameter", "DateLabel"]].copy()
+                            display_df = plot_df[["Distance", "Diameter"]].copy()
                             display_df = display_df.sort_values("Distance").reset_index(drop=True)
-                            display_df.columns = ["Distance", "Diameter", "Date"]
                             st.dataframe(display_df, use_container_width=True, hide_index=True)
 
                             # Download chart as Excel with embedded chart
                             def to_chart_excel_bytes(plot_data, roll_id, dates_selected):
                                 output = BytesIO()
-                                with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-                                    workbook = writer.book
-                                    worksheet = workbook.add_worksheet('Roll Profile')
-                                    writer.sheets['Roll Profile'] = worksheet
-                                    
-                                    # Formats
-                                    title_format = workbook.add_format({'bold': True, 'font_size': 16, 'align': 'center'})
-                                    info_format = workbook.add_format({'bold': True, 'font_size': 11})
-                                    data_format = workbook.add_format({'font_size': 10})
-                                    header_format = workbook.add_format({'bold': True, 'bg_color': '#1f77b4', 'font_color': 'white', 'align': 'center'})
-                                    
-                                    # Title
-                                    worksheet.merge_range('A1:D1', 'Dirty Roll Profile', title_format)
-                                    
-                                    # Roll information
-                                    row = 2
-                                    worksheet.write(row, 0, 'Roll No:', info_format)
-                                    worksheet.write(row, 1, roll_id, data_format)
-                                    worksheet.write(row, 2, 'Date(s):', info_format)
-                                    worksheet.write(row, 3, ', '.join(dates_selected), data_format)
-                                    
-                                    # Data table
-                                    row += 2
-                                    worksheet.write(row, 0, 'Distance', header_format)
-                                    worksheet.write(row, 1, 'Diameter', header_format)
-                                    worksheet.write(row, 2, 'Date', header_format)
-                                    
-                                    # Group data by date
-                                    for date_label in sorted(plot_data['DateLabel'].unique()):
-                                        date_data = plot_data[plot_data['DateLabel'] == date_label]
-                                        row += 1
-                                        for _, r in date_data.iterrows():
-                                            worksheet.write(row, 0, r['Distance'], data_format)
-                                            worksheet.write(row, 1, r['Diameter'], data_format)
-                                            worksheet.write(row, 2, r['DateLabel'], data_format)
-                                            row += 1
-                                    
-                                    # Create chart
-                                    chart_obj = workbook.add_chart({'type': 'line'})
-                                    
-                                    # Add series for each date
-                                    for idx, date_label in enumerate(sorted(plot_data['DateLabel'].unique())):
-                                        date_data = plot_data[plot_data['DateLabel'] == date_label].sort_values('Distance')
-                                        start_row = 5 + sum(len(plot_data[plot_data['DateLabel'] == d]) for d in sorted(plot_data['DateLabel'].unique())[:idx])
-                                        end_row = start_row + len(date_data) - 1
+                                
+                                try:
+                                    # Try xlsxwriter first for chart support
+                                    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+                                        workbook = writer.book
+                                        worksheet = workbook.add_worksheet('Roll Profile')
+                                        writer.sheets['Roll Profile'] = worksheet
                                         
-                                        chart_obj.add_series({
-                                            'name': date_label,
-                                            'categories': f'=\'Roll Profile\'!$A${start_row+1}:$A${end_row+1}',
-                                            'values': f'=\'Roll Profile\'!$B${start_row+1}:$B${end_row+1}',
-                                            'line': {'width': 2},
-                                            'marker': {'type': 'circle', 'size': 8},
+                                        # Formats
+                                        title_format = workbook.add_format({
+                                            'bold': True, 
+                                            'font_size': 16, 
+                                            'align': 'center',
+                                            'valign': 'vcenter'
                                         })
+                                        info_format = workbook.add_format({'bold': True, 'font_size': 11})
+                                        data_format = workbook.add_format({'font_size': 10})
+                                        header_format = workbook.add_format({
+                                            'bold': True, 
+                                            'bg_color': '#1f77b4', 
+                                            'font_color': 'white', 
+                                            'align': 'center'
+                                        })
+                                        
+                                        # Title
+                                        worksheet.merge_range('A1:C1', 'Dirty Roll Profile', title_format)
+                                        worksheet.set_row(0, 25)
+                                        
+                                        # Roll information
+                                        row = 2
+                                        worksheet.write(row, 0, 'Roll No:', info_format)
+                                        worksheet.write(row, 1, roll_id, data_format)
+                                        
+                                        row += 1
+                                        worksheet.write(row, 0, 'Date(s):', info_format)
+                                        worksheet.write(row, 1, ', '.join(dates_selected), data_format)
+                                        
+                                        # Prepare data organized by date
+                                        row += 2
+                                        start_row = row
+                                        
+                                        # Write headers
+                                        worksheet.write(row, 0, 'Distance', header_format)
+                                        
+                                        dates_list = sorted(plot_data['DateLabel'].unique())
+                                        for idx, date_label in enumerate(dates_list):
+                                            worksheet.write(row, idx + 1, date_label, header_format)
+                                        
+                                        row += 1
+                                        data_start_row = row
+                                        
+                                        # Write distance and diameter data
+                                        distances = sorted(plot_data['Distance'].unique())
+                                        for dist in distances:
+                                            worksheet.write(row, 0, dist, data_format)
+                                            for idx, date_label in enumerate(dates_list):
+                                                dia_val = plot_data[
+                                                    (plot_data['Distance'] == dist) & 
+                                                    (plot_data['DateLabel'] == date_label)
+                                                ]['Diameter'].values
+                                                if len(dia_val) > 0:
+                                                    worksheet.write(row, idx + 1, dia_val[0], data_format)
+                                            row += 1
+                                        
+                                        data_end_row = row - 1
+                                        
+                                        # Create chart
+                                        chart = workbook.add_chart({'type': 'line'})
+                                        
+                                        # Add series for each date
+                                        for idx, date_label in enumerate(dates_list):
+                                            col_letter = chr(66 + idx)  # B, C, D, etc.
+                                            chart.add_series({
+                                                'name': f'=\'Roll Profile\'!${col_letter}${start_row+1}',
+                                                'categories': f'=\'Roll Profile\'!$A${data_start_row+1}:$A${data_end_row+1}',
+                                                'values': f'=\'Roll Profile\'!${col_letter}${data_start_row+1}:${col_letter}${data_end_row+1}',
+                                                'line': {'color': '#1f77b4' if idx == 0 else None, 'width': 2.5},
+                                                'marker': {
+                                                    'type': 'circle', 
+                                                    'size': 7,
+                                                    'fill': {'color': '#1f77b4' if idx == 0 else None}
+                                                },
+                                            })
+                                        
+                                        chart.set_title({'name': 'Dirty Roll Profile', 'name_font': {'size': 14, 'bold': True}})
+                                        chart.set_x_axis({
+                                            'name': 'Distance (mm)',
+                                            'name_font': {'size': 11, 'bold': True},
+                                            'num_font': {'size': 10}
+                                        })
+                                        chart.set_y_axis({
+                                            'name': 'Diameter (mm)',
+                                            'name_font': {'size': 11, 'bold': True},
+                                            'num_font': {'size': 10}
+                                        })
+                                        chart.set_size({'width': 720, 'height': 450})
+                                        chart.set_legend({'position': 'right', 'font': {'size': 10}})
+                                        chart.set_style(10)
+                                        
+                                        # Insert chart
+                                        worksheet.insert_chart(f'E{start_row}', chart)
+                                        
+                                        # Adjust column widths
+                                        worksheet.set_column('A:A', 12)
+                                        for i in range(len(dates_list)):
+                                            worksheet.set_column(i+1, i+1, 15)
+                                
+                                except ImportError:
+                                    # Fallback to openpyxl without chart
+                                    summary_df = pd.DataFrame({
+                                        'Roll No': [roll_id],
+                                        'Date(s)': [', '.join(dates_selected)]
+                                    })
                                     
-                                    chart_obj.set_title({'name': 'Dirty Roll Profile'})
-                                    chart_obj.set_x_axis({'name': 'Distance (mm)'})
-                                    chart_obj.set_y_axis({'name': 'Diameter (mm)'})
-                                    chart_obj.set_size({'width': 720, 'height': 400})
+                                    pivot_data = plot_data.pivot_table(
+                                        index='Distance', 
+                                        columns='DateLabel', 
+                                        values='Diameter',
+                                        aggfunc='first'
+                                    ).reset_index()
                                     
-                                    # Insert chart
-                                    worksheet.insert_chart('E2', chart_obj)
-                                    
-                                    # Adjust column widths
-                                    worksheet.set_column('A:C', 12)
-                                    worksheet.set_column('D:D', 20)
+                                    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                                        summary_df.to_excel(writer, sheet_name='Roll Profile', index=False, startrow=0)
+                                        pivot_data.to_excel(writer, sheet_name='Roll Profile', index=False, startrow=3)
+                                        plot_data.to_excel(writer, sheet_name='Raw Data', index=False)
                                 
                                 output.seek(0)
                                 return output.getvalue()
