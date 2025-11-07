@@ -1,4 +1,4 @@
-import streamlit as st 
+import streamlit as st
 import pandas as pd
 from io import BytesIO
 from docx import Document
@@ -7,7 +7,6 @@ import gspread
 from google.oauth2.service_account import Credentials
 import altair as alt
 import re
-import matplotlib.pyplot as plt
 
 # Hide Streamlit UI elements
 hide_streamlit_ui = """
@@ -27,8 +26,8 @@ st.markdown(hide_streamlit_ui, unsafe_allow_html=True)
 custom_css = """
     <style>
     :root {
-        --primary-color: #1f77b4;
-        --secondary-color: #ff7f0e;
+        --primary-color: #2e7d32;
+        --secondary-color: #ff6f00;
         --success-color: #2ca02c;
         --danger-color: #d62728;
         --bg-light: #f8f9fa;
@@ -41,12 +40,12 @@ custom_css = """
     }
 
     .main-header {
-        background: linear-gradient(135deg, #1f77b4 0%, #0d5a9a 100%);
+        background: linear-gradient(135deg, #2e7d32 0%, #1b5e20 100%);
         color: white;
         padding: 2.5rem 2rem;
         border-radius: 12px;
         margin-bottom: 2rem;
-        box-shadow: 0 4px 15px rgba(31, 119, 180, 0.3);
+        box-shadow: 0 4px 15px rgba(46, 125, 50, 0.3);
     }
 
     .main-header h1 {
@@ -72,10 +71,10 @@ custom_css = """
     }
 
     .form-section h2 {
-        color: #1f77b4;
+        color: #2e7d32;
         margin-bottom: 1.5rem;
         font-size: 1.5rem;
-        border-bottom: 3px solid #1f77b4;
+        border-bottom: 3px solid #2e7d32;
         padding-bottom: 0.5rem;
     }
 
@@ -89,10 +88,10 @@ custom_css = """
     }
 
     .data-section h2 {
-        color: #1f77b4;
+        color: #2e7d32;
         margin-bottom: 1.5rem;
         font-size: 1.5rem;
-        border-bottom: 3px solid #1f77b4;
+        border-bottom: 3px solid #2e7d32;
         padding-bottom: 0.5rem;
     }
 
@@ -111,7 +110,7 @@ custom_css = """
     }
 
     .table-container thead th {
-        background: linear-gradient(135deg, #1f77b4 0%, #0d5a9a 100%);
+        background: linear-gradient(135deg, #2e7d32 0%, #1b5e20 100%);
         color: white;
         padding: 1rem;
         text-align: left;
@@ -127,7 +126,7 @@ custom_css = """
     }
 
     .table-container tbody tr:hover {
-        background-color: #f0f7ff;
+        background-color: #e8f5e9;
         transition: background-color 0.2s ease;
     }
 
@@ -143,18 +142,18 @@ custom_css = """
     }
 
     .stButton > button {
-        background: linear-gradient(135deg, #1f77b4 0%, #0d5a9a 100%) !important;
+        background: linear-gradient(135deg, #2e7d32 0%, #1b5e20 100%) !important;
         color: white !important;
         border: none !important;
         border-radius: 8px !important;
         padding: 0.75rem 1.5rem !important;
         font-weight: 600 !important;
         transition: all 0.3s ease !important;
-        box-shadow: 0 4px 10px rgba(31, 119, 180, 0.2) !important;
+        box-shadow: 0 4px 10px rgba(46, 125, 50, 0.2) !important;
     }
 
     .stButton > button:hover {
-        box-shadow: 0 6px 15px rgba(31, 119, 180, 0.4) !important;
+        box-shadow: 0 6px 15px rgba(46, 125, 50, 0.4) !important;
         transform: translateY(-2px) !important;
     }
 
@@ -178,25 +177,10 @@ custom_css = """
     }
 
     .info-box {
-        background: #e3f2fd;
-        border-left: 4px solid #1f77b4;
+        background: #e8f5e9;
+        border-left: 4px solid #2e7d32;
         padding: 1rem;
         border-radius: 6px;
-        margin-bottom: 1rem;
-    }
-
-    .download-section {
-        display: flex;
-        gap: 1rem;
-        flex-wrap: wrap;
-        padding-top: 1rem;
-        border-top: 1px solid var(--border-color);
-    }
-
-    .page-controls {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
         margin-bottom: 1rem;
     }
 
@@ -207,7 +191,7 @@ custom_css = """
 """
 st.markdown(custom_css, unsafe_allow_html=True)
 
-st.set_page_config(layout="wide", page_title="Roll Profile Data Entry")
+st.set_page_config(layout="wide", page_title="DC Roll Profile Data Entry")
 
 # --- Google Sheets Config ---
 SHEET_NAME = "Roll_Data"
@@ -219,18 +203,19 @@ SCOPE = [
 creds_dict = st.secrets["gcp_service_account"]
 creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPE)
 client = gspread.authorize(creds)
-sheet = client.open(SHEET_NAME).sheet1
+spreadsheet = client.open(SHEET_NAME)
+sheet = spreadsheet.worksheet('Sheet2')  # Using Sheet2
 
 # --- Roll Config ---
-DISTANCES = [100, 350, 600, 850, 1100, 1350, 1600]
+DISTANCES = [50, 150, 250, 350, 450, 550, 650, 750, 850, 950, 1050, 1150, 1250, 1350, 1450, 1550, 1650]
 MIN_DIA = 1245.0
-MAX_DIA = 1352.0
+MAX_DIA = 1700.0
 
 # --- Header ---
 st.markdown("""
     <div class="main-header">
-        <h1>📊 Backup Roll Profile Data Entry</h1>
-        <p>Manage and track roll specifications with ease</p>
+        <h1>🔧 DC Roll Profile Data Entry</h1>
+        <p>Manage and track DC roll specifications with ease</p>
     </div>
 """, unsafe_allow_html=True)
 
@@ -243,7 +228,7 @@ form_diameters = {}
 with st.container():
     st.markdown('<div class="form-section">', unsafe_allow_html=True)
     with st.form("entry_form", clear_on_submit=False):
-        st.markdown("### ➕ Add New Roll Entry")
+        st.markdown("### ➕ Add New DC Roll Entry")
         
         col1, col2, col3 = st.columns(3)
         with col1:
@@ -251,15 +236,17 @@ with st.container():
         with col2:
             roll_no = st.text_input("🏷️ Roll No (required)").strip().upper()
         with col3:
-            stand = st.selectbox(" Stand", ['Select', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'ROUGHING', 'DC'], index=0)
+            stand = st.selectbox("🏭 Stand", ['Select', 'DC#1', 'DC#2'], index=0)
 
-        col1, col2 = st.columns(2)
+        col1, col2, col3 = st.columns(3)
         with col1:
-            position = st.selectbox("📍 Position", ['Select', 'TOP', 'BOTTOM'], index=0)
+            position = st.selectbox("📍 Position", ['Select', 'TOP', 'BOT'], index=0)
         with col2:
-            crown = st.selectbox(" Crown", ['Select', 'STRAIGHT', '+100µ', '+200µ'], index=0)
+            crown = st.text_input("👑 Crown", value="STRAIGHT", disabled=True)
+        with col3:
+            pre_dia = st.text_input("📏 Pre Dia (mm)", value="", placeholder="Enter pre diameter")
 
-        st.markdown('<p class="diameter-label">📏 Diameters (mm) — must be between 1245 and 1352</p>', unsafe_allow_html=True)
+        st.markdown('<p class="diameter-label">📏 Diameters (mm) — must be between 1245 and 1700</p>', unsafe_allow_html=True)
         
         # Single column for diameter inputs
         for d in DISTANCES:
@@ -285,9 +272,13 @@ if submitted:
     
     if position == "Select":
         errors.append("❌ Please select a Position")
-    
-    if crown == "Select":
-        errors.append("❌ Please select a Crown type")
+
+    # Validate pre_dia
+    try:
+        pre_dia_val = float(pre_dia) if pre_dia.strip() != "" else ""
+    except ValueError:
+        errors.append("❌ Pre Dia must be a valid number")
+        pre_dia_val = ""
 
     filtered_diameters = {}
     for d, v in form_diameters.items():
@@ -302,12 +293,15 @@ if submitted:
         for e in errors:
             st.error(e)
     else:
-        row = [str(entry_date), roll_no, stand, position, crown] + [filtered_diameters.get(d, "") for d in DISTANCES]
+        row = [str(entry_date), roll_no, stand, position, "STRAIGHT", pre_dia_val] + [filtered_diameters.get(d, "") for d in DISTANCES]
         sheet.append_row(row)
         st.success(f"✅ Entry saved for Roll No: {roll_no}")
 
         existing_data = sheet.get_all_records()
         df = pd.DataFrame(existing_data)
+        
+        # Clear the form by rerunning the app
+        st.rerun()
 
 # --- Show Data ---
 with st.container():
@@ -315,7 +309,7 @@ with st.container():
     st.markdown("### 📋 Stored Data")
     
     if df.empty:
-        st.markdown('<div class="info-box">📭 No entries yet. Start by adding a new roll entry above.</div>', unsafe_allow_html=True)
+        st.markdown('<div class="info-box">📭 No entries yet. Start by adding a new DC roll entry above.</div>', unsafe_allow_html=True)
     else:
         for col in df.columns:
             if df[col].dtype in ["float64", "int64"]:
@@ -344,13 +338,13 @@ with st.container():
     # --- Download Functions ---
     def to_excel_bytes(df):
         output = BytesIO()
-        df.to_excel(output, index=False, sheet_name="RollData")
+        df.to_excel(output, index=False, sheet_name="DCRollData")
         output.seek(0)
         return output.getvalue()
 
     def to_word_bytes(df):
         doc = Document()
-        doc.add_heading("Roll Profile Data", level=1)
+        doc.add_heading("DC Roll Profile Data", level=1)
         table = doc.add_table(rows=1, cols=len(df.columns))
         table.style = "Table Grid"
         hdr = table.rows[0].cells
@@ -373,7 +367,7 @@ with st.container():
             st.download_button(
                 "⬇️ Download Excel",
                 data=to_excel_bytes(df),
-                file_name="roll_data.xlsx",
+                file_name="dc_roll_data.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 use_container_width=True
             )
@@ -381,7 +375,7 @@ with st.container():
             st.download_button(
                 "⬇️ Download Word",
                 data=to_word_bytes(df),
-                file_name="roll_data.docx",
+                file_name="dc_roll_data.docx",
                 mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                 use_container_width=True
             )
@@ -391,7 +385,7 @@ with st.container():
 
 # ---------- Plot Roll Profile Section ----------
 st.markdown('<div class="data-section">', unsafe_allow_html=True)
-st.markdown("## 📈 Plot Roll Profile")
+st.markdown("## 📈 Plot DC Roll Profile")
 
 if df.empty:
     st.info("No data to plot.")
@@ -424,7 +418,7 @@ else:
             df_plot["_date_label"] = df_plot[date_col].astype(str)
 
         # Detect distance columns
-        desired_distances = [100, 350, 600, 850, 1100, 1350, 1600]
+        desired_distances = DISTANCES
         found_distance_cols = []
         for col in norm_cols:
             m = re.search(r"(\d+)", str(col))
@@ -441,7 +435,7 @@ else:
         )
 
         if not found_distance_cols:
-            st.error("No distance columns (100,350,...) found in sheet.")
+            st.error("No distance columns found in sheet.")
         else:
             # Roll selection
             roll_options = sorted(df_plot[roll_col].astype(str).unique())
@@ -493,13 +487,13 @@ else:
                             max_dist = int(plot_df["Distance"].max())
                             y_min = float(plot_df["Diameter"].min())
                             y_max = float(plot_df["Diameter"].max())
-                            y_pad = (y_max - y_min) * 1 if (y_max - y_min) > 0 else 0.6
+                            y_pad = (y_max - y_min) * 0.1 if (y_max - y_min) > 0 else 0.2
                             y_domain = [y_min - y_pad, y_max + y_pad]
                             x_axis_values = [d for d, _ in found_distance_cols]
 
                             # Altair chart
                             chart = (
-                                alt.Chart(plot_df, title="Dirty Roll Profile")
+                                alt.Chart(plot_df, title="DC Roll Profile")
                                 .mark_line(
                                     point=alt.OverlayMarkDef(filled=True, size=60),
                                     interpolate="monotone",
@@ -529,7 +523,7 @@ else:
                             st.altair_chart(chart, use_container_width=True)
 
                             # Display data table below chart
-                            st.markdown("**Plotted Roll Data :**")
+                            st.markdown("**Data plotted (sample):**")
                             display_df = plot_df[["Distance", "Diameter"]].copy()
                             display_df = display_df.sort_values("Distance").reset_index(drop=True)
                             st.dataframe(display_df, use_container_width=True, hide_index=True)
@@ -539,11 +533,10 @@ else:
                                 output = BytesIO()
                                 
                                 try:
-                                    # Try xlsxwriter first for chart support
                                     with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
                                         workbook = writer.book
-                                        worksheet = workbook.add_worksheet('Roll Profile')
-                                        writer.sheets['Roll Profile'] = worksheet
+                                        worksheet = workbook.add_worksheet('DC Roll Profile')
+                                        writer.sheets['DC Roll Profile'] = worksheet
                                         
                                         # Formats
                                         title_format = workbook.add_format({
@@ -556,13 +549,13 @@ else:
                                         data_format = workbook.add_format({'font_size': 10})
                                         header_format = workbook.add_format({
                                             'bold': True, 
-                                            'bg_color': '#1f77b4', 
+                                            'bg_color': '#2e7d32', 
                                             'font_color': 'white', 
                                             'align': 'center'
                                         })
                                         
                                         # Title - using Roll ID
-                                        worksheet.merge_range('A1:C1','Dirty roll profile', title_format)
+                                        worksheet.merge_range('A1:C1', f'{roll_id}', title_format)
                                         worksheet.set_row(0, 25)
                                         
                                         # Roll information
@@ -574,7 +567,7 @@ else:
                                         worksheet.write(row, 0, 'Date(s):', info_format)
                                         worksheet.write(row, 1, ', '.join(dates_selected), data_format)
                                         
-                                        # Prepare data organized by date
+                                        # Prepare data
                                         row += 2
                                         start_row = row
                                         
@@ -588,7 +581,7 @@ else:
                                         row += 1
                                         data_start_row = row
                                         
-                                        # Write distance and diameter data
+                                        # Write data
                                         distances = sorted(plot_data['Distance'].unique())
                                         for dist in distances:
                                             worksheet.write(row, 0, dist, data_format)
@@ -606,62 +599,33 @@ else:
                                         # Create chart
                                         chart = workbook.add_chart({'type': 'line'})
                                         
-                                        # Add series for each date
                                         for idx, date_label in enumerate(dates_list):
-                                            col_letter = chr(66 + idx)  # B, C, D, etc.
+                                            col_letter = chr(66 + idx)
                                             chart.add_series({
-                                                'name': 'Dirty Profile',
-                                                'categories': f'=\'Roll Profile\'!$A${data_start_row+1}:$A${data_end_row+1}',
-                                                'values': f'=\'Roll Profile\'!${col_letter}${data_start_row+1}:${col_letter}${data_end_row+1}',
-                                                'line': {'color': '#1f77b4' if idx == 0 else None, 'width': 2.5},
-                                                'marker': {
-                                                    'type': 'circle', 
-                                                    'size': 7,
-                                                    'fill': {'color': '#1f77b4' if idx == 0 else None}
-                                                },
+                                                'name': 'DC Roll Profile',
+                                                'categories': f'=\'DC Roll Profile\'!$A${data_start_row+1}:$A${data_end_row+1}',
+                                                'values': f'=\'DC Roll Profile\'!${col_letter}${data_start_row+1}:${col_letter}${data_end_row+1}',
+                                                'line': {'color': '#2e7d32', 'width': 2.5},
+                                                'marker': {'type': 'circle', 'size': 7, 'fill': {'color': '#2e7d32'}},
                                             })
                                         
-                                        chart.set_title({'name': f'{roll_id}', 'name_font': {'size': 14, 'bold': True}})
-                                        chart.set_x_axis({
-                                            'name': 'Distance (mm)',
-                                            'name_font': {'size': 11, 'bold': True},
-                                            'num_font': {'size': 10}
-                                        })
-                                        chart.set_y_axis({
-                                            'name': 'Diameter (mm)',
-                                            'name_font': {'size': 11, 'bold': True},
-                                            'num_font': {'size': 10}
-                                        })
-                                        chart.set_size({'width': 720, 'height':350})
+                                        chart.set_title({'name': 'DC Roll Profile', 'name_font': {'size': 14, 'bold': True}})
+                                        chart.set_x_axis({'name': 'Distance (mm)', 'name_font': {'size': 11, 'bold': True}})
+                                        chart.set_y_axis({'name': 'Diameter (mm)', 'name_font': {'size': 11, 'bold': True}})
+                                        chart.set_size({'width': 720, 'height': 450})
                                         chart.set_legend({'position': 'right', 'font': {'size': 10}})
-                                        chart.set_style(10)
                                         
-                                        # Insert chart
                                         worksheet.insert_chart(f'E{start_row}', chart)
-                                        
-                                        # Adjust column widths
                                         worksheet.set_column('A:A', 12)
                                         for i in range(len(dates_list)):
                                             worksheet.set_column(i+1, i+1, 15)
                                 
                                 except ImportError:
-                                    # Fallback to openpyxl without chart
-                                    summary_df = pd.DataFrame({
-                                        'Roll No': [roll_id],
-                                        'Date(s)': [', '.join(dates_selected)]
-                                    })
-                                    
-                                    pivot_data = plot_data.pivot_table(
-                                        index='Distance', 
-                                        columns='DateLabel', 
-                                        values='Diameter',
-                                        aggfunc='first'
-                                    ).reset_index()
-                                    
+                                    summary_df = pd.DataFrame({'Roll No': [roll_id], 'Date(s)': [', '.join(dates_selected)]})
+                                    pivot_data = plot_data.pivot_table(index='Distance', columns='DateLabel', values='Diameter', aggfunc='first').reset_index()
                                     with pd.ExcelWriter(output, engine='openpyxl') as writer:
-                                        summary_df.to_excel(writer, sheet_name='Roll Profile', index=False, startrow=0)
-                                        pivot_data.to_excel(writer, sheet_name='Roll Profile', index=False, startrow=3)
-                                        plot_data.to_excel(writer, sheet_name='Raw Data', index=False)
+                                        summary_df.to_excel(writer, sheet_name='DC Roll Profile', index=False, startrow=0)
+                                        pivot_data.to_excel(writer, sheet_name='DC Roll Profile', index=False, startrow=3)
                                 
                                 output.seek(0)
                                 return output.getvalue()
@@ -669,7 +633,7 @@ else:
                             st.download_button(
                                 "⬇️ Download Chart as Excel",
                                 data=to_chart_excel_bytes(plot_df, selected_roll, chosen_dates),
-                                file_name=f"roll_profile_{selected_roll}.xlsx",
+                                file_name=f"dc_roll_profile_{selected_roll}.xlsx",
                                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                                 use_container_width=True
                             )
@@ -677,8 +641,3 @@ else:
                 st.info("Please choose a Roll No from the dropdown to plot.")
 
 st.markdown('</div>', unsafe_allow_html=True)
-
-
-
-
-
