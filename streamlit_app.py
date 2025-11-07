@@ -208,8 +208,8 @@ sheet = spreadsheet.worksheet('Sheet2')  # Using Sheet2
 
 # --- Roll Config ---
 DISTANCES = [50, 150, 250, 350, 450, 550, 650, 750, 850, 950, 1050, 1150, 1250, 1350, 1450, 1550, 1650]
-MIN_DIA = 1245.0
-MAX_DIA = 1700.0
+MIN_DIA = 370.0
+MAX_DIA = 905.0
 
 # --- Header ---
 st.markdown("""
@@ -641,4 +641,5 @@ else:
                 st.info("Please choose a Roll No from the dropdown to plot.")
 
 st.markdown('</div>', unsafe_allow_html=True)
+
 
