@@ -273,6 +273,9 @@ if submitted:
     if position == "Select":
         errors.append("❌ Please select a Position")
 
+    if pre_dia == "Select":
+        errors.append("❌ Please enter previous diameter")
+
     # Validate pre_dia
     try:
         pre_dia_val = float(pre_dia) if pre_dia.strip() != "" else ""
@@ -641,5 +644,6 @@ else:
                 st.info("Please choose a Roll No from the dropdown to plot.")
 
 st.markdown('</div>', unsafe_allow_html=True)
+
 
 
