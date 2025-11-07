@@ -9,6 +9,27 @@ import altair as alt
 import re
 import matplotlib.pyplot as plt
 
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Pinch Roll Data Form</title>
+    <style>
+        .top-right {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 18px;
+            font-family: Arial, sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <div class="top-right">
+        <a href="https://rollprofile.streamlit.app/">Click here for Pinch Roll Data Form</a>
+    </div>
+</body>
+</html>
+
 # Hide Streamlit UI elements
 hide_streamlit_ui = """
     <style>
@@ -677,6 +698,7 @@ else:
                 st.info("Please choose a Roll No from the dropdown to plot.")
 
 st.markdown('</div>', unsafe_allow_html=True)
+
 
 
 
