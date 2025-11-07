@@ -191,7 +191,7 @@ custom_css = """
 """
 st.markdown(custom_css, unsafe_allow_html=True)
 
-st.set_page_config(layout="wide", page_title="DC Roll Profile Data Entry")
+st.set_page_config(layout="wide", page_title="Pinch Roll Profile Data Entry")
 
 # --- Google Sheets Config ---
 SHEET_NAME = "Roll_Data"
@@ -214,7 +214,7 @@ MAX_DIA = 1700.0
 # --- Header ---
 st.markdown("""
     <div class="main-header">
-        <h1>🔧 DC Roll Profile Data Entry</h1>
+        <h1>Pinch Roll Profile Data Entry</h1>
         <p>Manage and track DC roll specifications with ease</p>
     </div>
 """, unsafe_allow_html=True)
@@ -236,17 +236,17 @@ with st.container():
         with col2:
             roll_no = st.text_input("🏷️ Roll No (required)").strip().upper()
         with col3:
-            stand = st.selectbox("🏭 Stand", ['Select', 'DC#1', 'DC#2'], index=0)
+            stand = st.selectbox(" Stand", ['Select', 'DC#1', 'DC#2'], index=0)
 
         col1, col2, col3 = st.columns(3)
         with col1:
             position = st.selectbox("📍 Position", ['Select', 'TOP', 'BOT'], index=0)
         with col2:
-            crown = st.text_input("👑 Crown", value="STRAIGHT", disabled=True)
+            crown = st.text_input(" Crown", value="STRAIGHT", disabled=True)
         with col3:
             pre_dia = st.text_input("📏 Pre Dia (mm)", value="", placeholder="Enter pre diameter")
 
-        st.markdown('<p class="diameter-label">📏 Diameters (mm) — must be between 1245 and 1700</p>', unsafe_allow_html=True)
+        st.markdown('<p class="diameter-label">📏 Diameters (mm) — must be between 370 and 905</p>', unsafe_allow_html=True)
         
         # Single column for diameter inputs
         for d in DISTANCES:
@@ -641,3 +641,4 @@ else:
                 st.info("Please choose a Roll No from the dropdown to plot.")
 
 st.markdown('</div>', unsafe_allow_html=True)
+
