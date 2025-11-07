@@ -388,7 +388,7 @@ with st.container():
 
 # ---------- Plot Roll Profile Section ----------
 st.markdown('<div class="data-section">', unsafe_allow_html=True)
-st.markdown("## 📈 Plot DC Roll Profile")
+st.markdown("## 📈 Plot Pinch Roll Profile")
 
 if df.empty:
     st.info("No data to plot.")
@@ -644,6 +644,7 @@ else:
                 st.info("Please choose a Roll No from the dropdown to plot.")
 
 st.markdown('</div>', unsafe_allow_html=True)
+
 
 
 
