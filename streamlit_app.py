@@ -227,6 +227,23 @@ DISTANCES = [100, 350, 600, 850, 1100, 1350, 1600]
 MIN_DIA = 1245.0
 MAX_DIA = 1352.0
 
+# Link to DC Roll app
+st.markdown("""
+    <div style="text-align: center; margin-bottom: 1.5rem;">
+        <a href="https://rollprofile.streamlit.app/" target="_blank" 
+           style="display: inline-block; 
+                  background: linear-gradient(135deg, #ff6f00 0%, #e65100 100%); 
+                  color: white; 
+                  padding: 0.75rem 2rem; 
+                  text-decoration: none; 
+                  border-radius: 8px; 
+                  font-weight: 600; 
+                  box-shadow: 0 4px 10px rgba(255, 111, 0, 0.3);
+                  transition: all 0.3s ease;">
+            🔧 Click here for Pinch Roll Data Form
+        </a>
+    </div>
+""", unsafe_allow_html=True)
 # --- Header ---
 st.markdown("""
     <div class="main-header">
@@ -234,6 +251,8 @@ st.markdown("""
         <p>Manage and track roll specifications with ease</p>
     </div>
 """, unsafe_allow_html=True)
+
+
 
 # Load existing data
 existing_data = sheet.get_all_records()
@@ -678,6 +697,7 @@ else:
                 st.info("Please choose a Roll No from the dropdown to plot.")
 
 st.markdown('</div>', unsafe_allow_html=True)
+
 
 
 
