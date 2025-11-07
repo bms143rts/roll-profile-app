@@ -678,6 +678,19 @@ else:
                 st.info("Please choose a Roll No from the dropdown to plot.")
 
 st.markdown('</div>', unsafe_allow_html=True)
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Pinch Roll Data Form</title>
+</head>
+<body>
+    <p>
+        <a href="https://rollprofile.streamlit.app/">Click here for Pinch Roll Data Form</a>
+    </p>
+</body>
+</html>
+
+
 
 
 
