@@ -1,0 +1,13 @@
+[theme]
+primaryColor = "#2E86C1"
+backgroundColor = "#F5F7FA"
+secondaryBackgroundColor = "#FFFFFF"
+textColor = "#000000"
+
+[server]
+enableCORS = false
+enableXsrfProtection = false
+
+[global]
+hideStreamlitLogo = true
+showGithubButton = false
