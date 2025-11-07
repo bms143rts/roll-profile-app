@@ -240,7 +240,7 @@ st.markdown("""
                   font-weight: 600; 
                   box-shadow: 0 4px 10px rgba(255, 111, 0, 0.3);
                   transition: all 0.3s ease;">
-            🔧 Click here for Pinch Roll Data Form
+             Click here for Pinch Roll Data Form
         </a>
     </div>
 """, unsafe_allow_html=True)
@@ -697,6 +697,7 @@ else:
                 st.info("Please choose a Roll No from the dropdown to plot.")
 
 st.markdown('</div>', unsafe_allow_html=True)
+
 
 
 
