@@ -532,7 +532,7 @@ with st.container():
 
 # ---------- Plot Roll Profile Section ----------
 st.markdown('<div class="data-section">', unsafe_allow_html=True)
-st.markdown("## 📈 Plot Pinch Roll Profile")
+st.markdown("## 📈 Plot DC Roll Profile")
 
 if df.empty:
     st.info("No data to plot.")
@@ -629,18 +629,70 @@ else:
                         else:
                             plot_df = pd.DataFrame(rows).sort_values(["DateLabel", "Distance"])
 
+                            # Get pre_dia for ideal profile calculation
+                            pre_dia_col = find_col_by_candidates(norm_cols, ["pre dia", "predia", "pre_dia"])
+                            pre_dia_value = None
+                            if pre_dia_col:
+                                for _, r in roll_rows.iterrows():
+                                    label = r["_date_label"]
+                                    if label in chosen_dates:
+                                        try:
+                                            pre_dia_value = float(str(r.get(pre_dia_col, "")).strip())
+                                            break
+                                        except:
+                                            pass
+                            
+                            # Calculate ideal profile if pre_dia is available
+                            ideal_rows = []
+                            if pre_dia_value and pre_dia_value > 0:
+                                for dist in sorted(plot_df['Distance'].unique()):
+                                    # Taper portion: 0-500mm and 1200-1700mm (both 500mm from ends)
+                                    # Straight portion: 500-1200mm (middle 700mm)
+                                    
+                                    if dist <= 500:
+                                        # Left taper: reduce by 0.60 per 100mm from center
+                                        reduction = ((500 - dist) / 100) * 0.60
+                                        ideal_dia = pre_dia_value - reduction
+                                    elif dist >= 1200:
+                                        # Right taper: reduce by 0.60 per 100mm from center
+                                        reduction = ((dist - 1200) / 100) * 0.60
+                                        ideal_dia = pre_dia_value - reduction
+                                    else:
+                                        # Straight portion in the middle
+                                        ideal_dia = pre_dia_value
+                                    
+                                    ideal_rows.append({
+                                        "Distance": int(dist),
+                                        "Diameter": ideal_dia,
+                                        "Profile": "Ideal Profile"
+                                    })
+                            
+                            # Add profile type to actual data
+                            plot_df["Profile"] = plot_df["DateLabel"]
+                            
+                            # Combine actual and ideal data
+                            if ideal_rows:
+                                ideal_df = pd.DataFrame(ideal_rows)
+                                
+                                # Create combined chart data
+                                actual_chart_df = plot_df[["Distance", "Diameter", "Profile"]].copy()
+                                ideal_chart_df = ideal_df[["Distance", "Diameter", "Profile"]].copy()
+                                combined_df = pd.concat([actual_chart_df, ideal_chart_df], ignore_index=True)
+                            else:
+                                combined_df = plot_df[["Distance", "Diameter", "Profile"]].copy()
+
                             # Chart settings
-                            min_dist = int(plot_df["Distance"].min())
-                            max_dist = int(plot_df["Distance"].max())
-                            y_min = float(plot_df["Diameter"].min())
-                            y_max = float(plot_df["Diameter"].max())
+                            min_dist = int(combined_df["Distance"].min())
+                            max_dist = int(combined_df["Distance"].max())
+                            y_min = float(combined_df["Diameter"].min())
+                            y_max = float(combined_df["Diameter"].max())
                             y_pad = (y_max - y_min) * 0.1 if (y_max - y_min) > 0 else 0.2
                             y_domain = [y_min - y_pad, y_max + y_pad]
                             x_axis_values = [d for d, _ in found_distance_cols]
 
-                            # Altair chart
+                            # Altair chart with both profiles
                             chart = (
-                                alt.Chart(plot_df, title="DC Roll Profile")
+                                alt.Chart(combined_df, title="DC Roll Profile")
                                 .mark_line(
                                     point=alt.OverlayMarkDef(filled=True, size=60),
                                     interpolate="monotone",
@@ -657,11 +709,23 @@ else:
                                         title="Diameter (mm)",
                                         scale=alt.Scale(domain=y_domain),
                                     ),
-                                    color=alt.Color("DateLabel:N", title="Date"),
+                                    color=alt.Color(
+                                        "Profile:N", 
+                                        title="Profile",
+                                        scale=alt.Scale(
+                                            domain=["Ideal Profile"] + [d for d in plot_df["DateLabel"].unique()],
+                                            range=["#ff7f0e", "#2e7d32"] + ["#1f77b4", "#d62728", "#9467bd"]
+                                        )
+                                    ),
+                                    strokeDash=alt.condition(
+                                        alt.datum.Profile == "Ideal Profile",
+                                        alt.value([5, 5]),  # Dashed line for ideal
+                                        alt.value([0])      # Solid line for actual
+                                    ),
                                     tooltip=[
-                                        alt.Tooltip("DateLabel", title="Date"),
+                                        alt.Tooltip("Profile", title="Type"),
                                         alt.Tooltip("Distance", title="Distance (mm)"),
-                                        alt.Tooltip("Diameter", title="Diameter (mm)", format=".3f"),
+                                        alt.Tooltip("Diameter", title="Diameter (mm)", format=".2f"),
                                     ],
                                 )
                                 .properties(height=380)
@@ -788,8 +852,3 @@ else:
                 st.info("Please choose a Roll No from the dropdown to plot.")
 
 st.markdown('</div>', unsafe_allow_html=True)
-
-
-
-
-
