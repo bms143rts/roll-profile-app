@@ -360,7 +360,144 @@ with st.container():
         st.markdown('</div>', unsafe_allow_html=True)
 
         st.markdown(f"<p style='text-align: center; color: #666; font-size: 0.9rem; margin: 1rem 0;'>Page {page} of {total_pages} | Total entries: {len(df_display)}</p>", unsafe_allow_html=True)
-
+ # --- Edit/Delete Section ---
+        st.markdown("### ✏️ Edit or Delete Entry")
+        
+        # Create a selection dropdown with Row Number and Roll No
+        row_options = ["-- Select a row --"] + [f"Row {i+1}: {row.get('Roll No', 'N/A')}" for i, row in df_display.iterrows()]
+        selected_row_str = st.selectbox("Select a row to edit or delete:", row_options)
+        
+        if selected_row_str != "-- Select a row --":
+            # Extract row index
+            selected_idx = int(selected_row_str.split(":")[0].replace("Row ", "")) - 1
+            selected_row = df_display.iloc[selected_idx]
+            
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                if st.button("✏️ Edit This Row", use_container_width=True):
+                    st.session_state.editing_row = selected_idx
+                    st.session_state.edit_data = selected_row.to_dict()
+            
+            with col2:
+                if st.button("🗑️ Delete This Row", type="secondary", use_container_width=True):
+                    if st.session_state.get('confirm_delete') != selected_idx:
+                        st.session_state.confirm_delete = selected_idx
+                        st.warning(f"⚠️ Click 'Delete This Row' again to confirm deletion of Row {selected_idx + 1}")
+                    else:
+                        # Delete from Google Sheets (row index + 2 because of header row and 0-indexing)
+                        sheet.delete_rows(selected_idx + 2)
+                        st.success(f"✅ Row {selected_idx + 1} deleted successfully!")
+                        st.session_state.confirm_delete = None
+                        existing_data = sheet.get_all_records()
+                        df = pd.DataFrame(existing_data)
+                        st.rerun()
+        
+        # --- Edit Form ---
+        if st.session_state.get('editing_row') is not None:
+            st.markdown("---")
+            st.markdown("### 📝 Edit Row Data")
+            
+            edit_idx = st.session_state.editing_row
+            edit_data = st.session_state.edit_data
+            
+            with st.form("edit_form"):
+                st.info(f"Editing Row {edit_idx + 1}")
+                
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    edit_date = st.date_input("📅 Date", value=pd.to_datetime(edit_data.get('Date', dt_date.today())))
+                with col2:
+                    edit_roll_no = st.text_input("🏷️ Roll No", value=str(edit_data.get('Roll No', ''))).strip().upper()
+                with col3:
+                    current_stand = edit_data.get('stand', 'Select')
+                    stand_options = ['Select', 'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'ROUGHING', 'DC']
+                    stand_idx = stand_options.index(current_stand) if current_stand in stand_options else 0
+                    edit_stand = st.selectbox("🏭 Stand", stand_options, index=stand_idx)
+                
+                col1, col2 = st.columns(2)
+                with col1:
+                    current_position = edit_data.get('position', 'Select')
+                    position_options = ['Select', 'TOP', 'BOTTOM']
+                    position_idx = position_options.index(current_position) if current_position in position_options else 0
+                    edit_position = st.selectbox("📍 Position", position_options, index=position_idx)
+                with col2:
+                    current_crown = edit_data.get('crown', 'Select')
+                    crown_options = ['Select', 'STRAIGHT', '+100µ', '+200µ']
+                    crown_idx = crown_options.index(current_crown) if current_crown in crown_options else 0
+                    edit_crown = st.selectbox("👑 Crown", crown_options, index=crown_idx)
+                
+                st.markdown('<p class="diameter-label">📏 Diameters (mm) — must be between 1245 and 1352</p>', unsafe_allow_html=True)
+                
+                edit_diameters = {}
+                for d in DISTANCES:
+                    col_name = str(d) if str(d) in edit_data else f"{d}.0" if f"{d}.0" in edit_data else f"{d}.00"
+                    current_val = edit_data.get(col_name, "")
+                    # Convert to string and clean
+                    if isinstance(current_val, (int, float)):
+                        current_val = str(current_val)
+                    else:
+                        current_val = str(current_val).replace('.00', '').replace('.0', '') if current_val else ""
+                    
+                    val = st.text_input(f"{d} mm", value=current_val, key=f"edit_dia_{d}")
+                    try:
+                        edit_diameters[d] = float(val) if val.strip() != "" else 0
+                    except ValueError:
+                        edit_diameters[d] = 0
+                
+                col1, col2 = st.columns(2)
+                with col1:
+                    update_submitted = st.form_submit_button("💾 Update Entry", use_container_width=True)
+                with col2:
+                    cancel_edit = st.form_submit_button("❌ Cancel", use_container_width=True)
+                
+                if cancel_edit:
+                    st.session_state.editing_row = None
+                    st.session_state.edit_data = None
+                    st.rerun()
+                
+                if update_submitted:
+                    errors = []
+                    
+                    if edit_roll_no == "":
+                        errors.append("❌ Roll No cannot be empty")
+                    
+                    if edit_stand == "Select":
+                        errors.append("❌ Please select a Stand")
+                    
+                    if edit_position == "Select":
+                        errors.append("❌ Please select a Position")
+                    
+                    if edit_crown == "Select":
+                        errors.append("❌ Please select a Crown type")
+                    
+                    filtered_edit_diameters = {}
+                    for d, v in edit_diameters.items():
+                        if v == 0:
+                            continue
+                        if not (MIN_DIA <= v <= MAX_DIA):
+                            errors.append(f"❌ {d} mm value {v} out of range [{MIN_DIA}-{MAX_DIA}]")
+                        else:
+                            filtered_edit_diameters[d] = v
+                    
+                    if errors:
+                        for e in errors:
+                            st.error(e)
+                    else:
+                        # Update in Google Sheets (row index + 2 because of header row and 0-indexing)
+                        updated_row = [str(edit_date), edit_roll_no, edit_stand, edit_position, edit_crown] + [filtered_edit_diameters.get(d, "") for d in DISTANCES]
+                        
+                        # Update each cell in the row
+                        row_num = edit_idx + 2
+                        for col_idx, value in enumerate(updated_row, start=1):
+                            sheet.update_cell(row_num, col_idx, value)
+                        
+                        st.success(f"✅ Row {edit_idx + 1} updated successfully!")
+                        st.session_state.editing_row = None
+                        st.session_state.edit_data = None
+                        existing_data = sheet.get_all_records()
+                        df = pd.DataFrame(existing_data)
+                        st.rerun()
     # --- Download Functions ---
     def to_excel_bytes(df):
         output = BytesIO()
@@ -697,6 +834,7 @@ else:
                 st.info("Please choose a Roll No from the dropdown to plot.")
 
 st.markdown('</div>', unsafe_allow_html=True)
+
 
 
 
